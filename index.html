@@ -6,7 +6,7 @@
     <title>my-cinematek</title>
     <meta
       name="description"
-      content="A personal movie review journal for writing about the films you watched in theaters, on the sofa, or anywhere else."
+      content="Un journal personnel de films vus au cinéma ou chez soi."
     />
     <link rel="stylesheet" href="styles.css?v=20260924-15" />
   </head>
@@ -15,38 +15,38 @@
       <div class="container nav-wrap">
         <a href="#top" class="brand">my-cinematek</a>
         <nav class="main-nav" aria-label="Main navigation">
-          <a href="#diary">Diary</a>
-          <a href="#about">About</a>
+          <a href="#diary">Journal</a>
+          <a href="#about">À propos</a>
         </nav>
       </div>
     </header>
 
     <main id="top" class="container site-main">
       <section class="hero">
-        <p class="eyebrow">films / critics / screenings</p>
+        <p class="eyebrow">films / critiques / séances</p>
         <h1>my-cinematek</h1>
-        <p class="lede">A personal record of films watched and thoughts written.</p>
+        <p class="lede">Un relevé de films vus et de pensées écrites.</p>
       </section>
 
       <div class="diary-layout">
         <section id="diary" class="diary-section">
           <div class="section-head">
-            <p class="eyebrow">the diary</p>
-            <h2>Critics</h2>
+            <p class="eyebrow">le journal</p>
+            <h2>Critiques</h2>
           </div>
           <div id="posts-list" class="post-list" aria-live="polite"></div>
-          <button id="load-more-posts" class="secondary-btn load-more" type="button" hidden>Load more critics</button>
+          <button id="load-more-posts" class="secondary-btn load-more" type="button" hidden>Charger plus de critiques</button>
         </section>
 
         <aside id="watched-shelf" class="watched-shelf" aria-labelledby="watched-title">
-          <div class="section-head"><p class="eyebrow">recently watched</p><h2 id="watched-title">Without a critic</h2></div>
+          <div class="section-head"><p class="eyebrow">vus récemment</p><h2 id="watched-title">Sans critique</h2></div>
           <div id="watched-list" class="watched-list"></div>
         </aside>
       </div>
 
       <section id="about" class="about-note">
-        <p class="eyebrow">about this place</p>
-        <p>Films watched, critics written, and screenings kept in one place.</p>
+        <p class="eyebrow">à propos</p>
+        <p>Films vus, critiques écrites et séances conservées au même endroit.</p>
       </section>
     </main>
 
@@ -57,7 +57,7 @@
     <div id="critic-modal" class="critic-modal" hidden>
       <div class="critic-modal-backdrop" data-close-modal></div>
       <article class="critic-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <button class="modal-close" type="button" aria-label="Close critic" data-close-modal>&times;</button>
+        <button class="modal-close" type="button" aria-label="Fermer la critique" data-close-modal>&times;</button>
         <div id="modal-content"></div>
       </article>
     </div>

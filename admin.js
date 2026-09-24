@@ -70,12 +70,12 @@ function updateVenueFields() {
 async function readJson(response) {
   const text = await response.text();
   if (!text.trim()) {
-    throw new Error(`Server returned an empty response (${response.status}).`);
+    throw new Error(`Le serveur a renvoyé une réponse vide (${response.status}).`);
   }
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error(`Server returned invalid data (${response.status}).`);
+    throw new Error(`Le serveur a renvoyé des données invalides (${response.status}).`);
   }
 }
 
@@ -89,7 +89,7 @@ function posterUrl(path) {
 
 async function loadPosts() {
   const response = await fetch("/api/posts");
-  if (!response.ok) throw new Error("Critics could not be loaded.");
+  if (!response.ok) throw new Error("Les critiques n’ont pas pu être chargées.");
   return readJson(response);
 }
 
@@ -101,7 +101,7 @@ async function authenticate(password) {
 function showEditor() {
   loginPanel.classList.add("hidden");
   editor.classList.remove("hidden");
-  editorStatus.textContent = "Editor unlocked.";
+  editorStatus.textContent = "Éditeur déverrouillé.";
   loadAdminPosts();
   loadWatchedAdmin();
 }
@@ -114,17 +114,17 @@ function resetForm() {
   selectedFilm.innerHTML = "";
   selectedFilm.classList.add("hidden");
   document.getElementById("rating").value = 8;
-  document.getElementById("publish-button").textContent = "Publish critic";
+  document.getElementById("publish-button").textContent = "Publier la critique";
   cancelEdit.classList.add("hidden");
   updateVenueFields();
 }
 
 async function selectFilm(film) {
-  filmSearchStatus.textContent = "Loading film details...";
+  filmSearchStatus.textContent = "Chargement des informations du film…";
   try {
     const response = await fetch(`/api/movie?id=${film.id}`);
     const details = await readJson(response);
-    if (!response.ok) throw new Error(details.error || "Film details unavailable.");
+    if (!response.ok) throw new Error(details.error || "Informations du film indisponibles.");
     selectedFilmData = details;
   } catch (error) {
     filmSearchStatus.textContent = error.message;
@@ -132,10 +132,10 @@ async function selectFilm(film) {
   }
   document.getElementById("movie-title").value = selectedFilmData.title;
   filmData.value = JSON.stringify(selectedFilmData);
-  selectedFilm.innerHTML = `${selectedFilmData.poster ? `<img src="${escapeHtml(selectedFilmData.poster)}" alt="" />` : ""}<div><p class="eyebrow">selected film</p><h3>${escapeHtml(selectedFilmData.title)}</h3><p>${escapeHtml(selectedFilmData.year || "")}</p></div>`;
+  selectedFilm.innerHTML = `${selectedFilmData.poster ? `<img src="${escapeHtml(selectedFilmData.poster)}" alt="" />` : ""}<div><p class="eyebrow">film sélectionné</p><h3>${escapeHtml(selectedFilmData.title)}</h3><p>${escapeHtml(selectedFilmData.year || "")}</p></div>`;
   selectedFilm.classList.remove("hidden");
   filmResults.innerHTML = "";
-  filmSearchStatus.textContent = "Film selected with technical details.";
+  filmSearchStatus.textContent = "Film sélectionné avec ses informations techniques.";
 }
 
 function selectVenue(place) {
@@ -149,14 +149,14 @@ function selectVenue(place) {
 async function searchFilms() {
   const query = filmSearch.value.trim();
   if (!query) return;
-  filmSearchStatus.textContent = "Searching...";
+  filmSearchStatus.textContent = "Recherche…";
   try {
     const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
     const payload = await readJson(response);
-    if (!response.ok) throw new Error(payload.error || "Search unavailable.");
+    if (!response.ok) throw new Error(payload.error || "Recherche indisponible.");
     filmResults.innerHTML = payload.results.slice(0, 6).map((film) => `<button type="button" class="film-result" data-film='${escapeHtml(JSON.stringify(film))}'>${film.poster_path ? `<img src="${escapeHtml(posterUrl(film.poster_path))}" alt="" />` : ""}<span><strong>${escapeHtml(film.title)}</strong><small>${escapeHtml((film.release_date || "").slice(0, 4))}</small></span></button>`).join("");
     filmResults.querySelectorAll(".film-result").forEach((button) => button.addEventListener("click", () => selectFilm(JSON.parse(button.dataset.film))));
-    filmSearchStatus.textContent = payload.results.length ? "Choose the film you watched." : "No films found.";
+    filmSearchStatus.textContent = payload.results.length ? "Choisissez le film vu." : "Aucun film trouvé.";
   } catch (error) {
     filmSearchStatus.textContent = error.message;
   }
@@ -168,7 +168,7 @@ async function searchWatchedFilms() {
   try {
     const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
     const payload = await readJson(response);
-    if (!response.ok) throw new Error(payload.error || "Search unavailable.");
+    if (!response.ok) throw new Error(payload.error || "Recherche indisponible.");
     watchedFilmResults.innerHTML = payload.results.slice(0, 6).map((film) => `<button type="button" class="film-result" data-film='${escapeHtml(JSON.stringify(film))}'>${film.poster_path ? `<img src="${escapeHtml(posterUrl(film.poster_path))}" alt="" />` : ""}<span><strong>${escapeHtml(film.title)}</strong><small>${escapeHtml((film.release_date || "").slice(0, 4))}</small></span></button>`).join("");
     watchedFilmResults.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { watchedFilmData.value = JSON.stringify(JSON.parse(button.dataset.film)); watchedFilmSearch.value = JSON.parse(button.dataset.film).title; watchedFilmResults.innerHTML = ""; }));
   } catch (error) { watchedStatus.textContent = error.message; }
@@ -180,7 +180,7 @@ async function searchVenues() {
   try {
     const response = await fetch(`/api/places?query=${encodeURIComponent(query)}`);
     const payload = await readJson(response);
-    if (!response.ok) throw new Error(payload.error || "Cinema search unavailable.");
+    if (!response.ok) throw new Error(payload.error || "Recherche de cinéma indisponible.");
     venueResults.innerHTML = payload.results.map((place) => `<button type="button" class="venue-result" data-place='${escapeHtml(JSON.stringify(place))}'><strong>${escapeHtml(place.name)}</strong><small>${escapeHtml(place.displayName)}</small></button>`).join("");
     venueResults.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => selectVenue(JSON.parse(button.dataset.place))));
   } catch (error) {
@@ -194,7 +194,7 @@ async function searchWatchedVenues() {
   try {
     const response = await fetch(`/api/places?query=${encodeURIComponent(query)}`);
     const payload = await readJson(response);
-    if (!response.ok) throw new Error(payload.error || "Cinema search unavailable.");
+    if (!response.ok) throw new Error(payload.error || "Recherche de cinéma indisponible.");
     watchedVenueResults.innerHTML = payload.results.map((place) => `<button type="button" class="venue-result" data-place='${escapeHtml(JSON.stringify(place))}'><strong>${escapeHtml(place.name)}</strong><small>${escapeHtml(place.displayName)}</small></button>`).join("");
     watchedVenueResults.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => {
       const place = JSON.parse(button.dataset.place);
@@ -223,23 +223,23 @@ function editPost(post) {
   updateVenueFields();
   document.getElementById("review-body").value = post.body;
   document.getElementById("conclusion").value = post.conclusion || "";
-  selectedFilm.innerHTML = `${selectedFilmData.poster ? `<img src="${escapeHtml(selectedFilmData.poster)}" alt="" />` : ""}<div><p class="eyebrow">selected film</p><h3>${escapeHtml(post.movieTitle)}</h3><p>${escapeHtml(selectedFilmData.year || "")}</p></div>`;
+  selectedFilm.innerHTML = `${selectedFilmData.poster ? `<img src="${escapeHtml(selectedFilmData.poster)}" alt="" />` : ""}<div><p class="eyebrow">film sélectionné</p><h3>${escapeHtml(post.movieTitle)}</h3><p>${escapeHtml(selectedFilmData.year || "")}</p></div>`;
   selectedFilm.classList.remove("hidden");
-  document.getElementById("publish-button").textContent = "Save changes";
+  document.getElementById("publish-button").textContent = "Enregistrer les modifications";
   cancelEdit.classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function loadAdminPosts() {
   const posts = await loadPosts();
-  adminPostList.innerHTML = posts.length ? posts.map((post) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(post.date)}</p><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.movieTitle)}</p></div><button type="button" class="secondary-btn" data-id="${post.id}">Edit</button></article>`).join("") : '<p class="empty-state">No critics published yet.</p>';
+  adminPostList.innerHTML = posts.length ? posts.map((post) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(post.date)}</p><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.movieTitle)}</p></div><button type="button" class="secondary-btn" data-id="${post.id}">Modifier</button></article>`).join("") : '<p class="empty-state">Aucune critique publiée.</p>';
   adminPostList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => editPost((await loadPosts()).find((post) => post.id === Number(button.dataset.id)))));
 }
 
 async function loadWatchedAdmin() {
   const response = await fetch("/api/watched");
   const items = await readJson(response);
-  watchedAdminList.innerHTML = items.length ? items.map((item) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(item.date)}${item.rewatch ? " · rewatch" : ""}</p><h3>${escapeHtml(item.film?.title || "Untitled film")}</h3><p>${item.rating == null ? "No rating" : `★ ${Number(item.rating).toFixed(1)}`} ${item.note ? `· ${escapeHtml(item.note)}` : ""}</p></div><button type="button" class="secondary-btn" data-watched-id="${item.id}">Edit</button></article>`).join("") : '<p class="empty-state">No unwritten screenings yet.</p>';
+  watchedAdminList.innerHTML = items.length ? items.map((item) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(item.date)}${item.rewatch ? " · revu" : ""}</p><h3>${escapeHtml(item.film?.title || "Film sans titre")}</h3><p>${item.rating == null ? "Sans note" : `★ ${Number(item.rating).toFixed(1)}`} ${item.note ? `· ${escapeHtml(item.note)}` : ""}</p></div><button type="button" class="secondary-btn" data-watched-id="${item.id}">Modifier</button></article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>';
   watchedAdminList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => {
     const item = (await (await fetch("/api/watched")).json()).find((entry) => entry.id === Number(button.dataset.watchedId));
     if (!item) return;
@@ -254,8 +254,8 @@ async function loadWatchedAdmin() {
     watchedVenueName.value = item.venue?.name || "";
     watchedVenueLocation.value = item.venue?.location || "";
     watchedVenueField.classList.toggle("hidden", watchedVenueType.value === "home");
-    watchedStatus.textContent = "Editing this watch.";
-    watchedForm.querySelector("button[type='submit']").textContent = "Save watch";
+    watchedStatus.textContent = "Modification de ce visionnage.";
+    watchedForm.querySelector("button[type='submit']").textContent = "Enregistrer le visionnage";
     window.scrollTo({ top: watchedForm.offsetTop - 20, behavior: "smooth" });
   }));
 }
@@ -267,7 +267,7 @@ loginForm.addEventListener("submit", async (event) => {
     authorSecret = password;
     showEditor();
   } else {
-    loginStatus.textContent = "That password was not accepted.";
+    loginStatus.textContent = "Mot de passe incorrect.";
     loginPassword.value = "";
   }
 });
@@ -298,11 +298,11 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const savedFilm = selectedFilmData || (filmData.value ? JSON.parse(filmData.value) : null);
   const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), venue: { type: venueType.value, name: venueType.value === "home" ? "My TV" : venueName.value.trim(), location: venueType.value === "home" ? "" : venueLocation.value.trim() }, tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), conclusion: document.getElementById("conclusion").value.trim(), film: savedFilm };
-  if (!post.title || !post.movieTitle || !post.date || !post.body || !post.conclusion || !savedFilm?.title) { editorStatus.textContent = "Choose a film and complete the critic first."; return; }
+  if (!post.title || !post.movieTitle || !post.date || !post.body || !post.conclusion || !savedFilm?.title) { editorStatus.textContent = "Choisissez un film et complétez la critique."; return; }
   const response = await fetch(editingPostId ? `/api/posts/${editingPostId}` : "/api/posts", { method: editingPostId ? "PUT" : "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify(post) });
-  if (!response.ok) { editorStatus.textContent = "The critic could not be saved."; return; }
+  if (!response.ok) { editorStatus.textContent = "La critique n’a pas pu être enregistrée."; return; }
   resetForm();
-  editorStatus.textContent = "Critic saved.";
+  editorStatus.textContent = "Critique enregistrée.";
   loadAdminPosts();
 });
 
@@ -322,11 +322,11 @@ watchedVenueType.addEventListener("change", () => {
 watchedForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const film = watchedFilmData.value ? JSON.parse(watchedFilmData.value) : null;
-  if (!film?.id || !watchedDate.value) { watchedStatus.textContent = "Choose a film and date first."; return; }
+  if (!film?.id || !watchedDate.value) { watchedStatus.textContent = "Choisissez un film et une date."; return; }
   const watchedPayload = { date: watchedDate.value, rating: watchedRating.value ? Number(watchedRating.value) : null, note: watchedNote.value.trim(), rewatch: watchedRewatch.checked, film: { id: film.id, title: film.title, year: (film.release_date || "").slice(0, 4), poster: posterUrl(film.poster_path) }, venue: { type: watchedVenueType.value, name: watchedVenueType.value === "home" ? "My TV" : watchedVenueName.value.trim(), location: watchedVenueType.value === "home" ? "" : watchedVenueLocation.value.trim() } };
   const response = await fetch(editingWatchedId ? `/api/watched/${editingWatchedId}` : "/api/watched", { method: editingWatchedId ? "PUT" : "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify(watchedPayload) });
-  if (!response.ok) { watchedStatus.textContent = "The watch could not be saved."; return; }
-  watchedForm.reset(); watchedFilmData.value = ""; editingWatchedId = null; watchedForm.querySelector("button[type='submit']").textContent = "Add to recent watches"; watchedStatus.textContent = "Watch saved."; loadWatchedAdmin();
+  if (!response.ok) { watchedStatus.textContent = "Le visionnage n’a pas pu être enregistré."; return; }
+  watchedForm.reset(); watchedFilmData.value = ""; editingWatchedId = null; watchedForm.querySelector("button[type='submit']").textContent = "Ajouter aux visionnages"; watchedStatus.textContent = "Visionnage enregistré."; loadWatchedAdmin();
 });
 renderPresetTags();
 updateVenueFields();
