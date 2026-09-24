@@ -24,7 +24,18 @@ async function loadPosts(offset = 0) {
 async function loadWatched() {
   const response = await fetch(`/api/watched?fresh=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Recent watches could not be loaded.");
-  return response.json();
+  const items = await response.json();
+  return Promise.all(items.map(async (item) => {
+    if (item.film?.poster || !item.film?.id) return item;
+    try {
+      const detailsResponse = await fetch(`/api/movie?id=${item.film.id}`);
+      if (!detailsResponse.ok) return item;
+      const details = await detailsResponse.json();
+      return { ...item, film: { ...item.film, ...details } };
+    } catch {
+      return item;
+    }
+  }));
 }
 function technicalFacts(film) {
   return `<div class="technical-grid"><span>Director<strong>${escapeHtml(film.director || "Not listed")}</strong></span><span>Main cast<strong>${escapeHtml((film.cast || []).join(", ") || "Not listed")}</strong></span><span>Runtime<strong>${film.runtime ? `${film.runtime} min` : "Not listed"}</strong></span><span>Budget<strong>${money(film.budget)}</strong></span><span>Genres<strong>${escapeHtml((film.genres || []).join(", ") || "Not listed")}</strong></span><span>Country<strong>${escapeHtml((film.countries || []).join(", ") || "Not listed")}</strong></span></div>`;
