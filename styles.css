@@ -80,7 +80,7 @@ textarea {
 .recent-watch-copy span { display: block; margin-top: .45rem; color: var(--muted); font-size: .7rem; line-height: 1.35; }
 .recent-watch-copy em { color: var(--accent); font-family: "Trebuchet MS", sans-serif; font-size: .58rem; font-style: normal; letter-spacing: .1em; text-transform: uppercase; }
 .recent-watch-poster { grid-column: 2; grid-row: 1; width: 76px; height: 108px; object-fit: cover; border: 1px solid #6f3840; }
-.recent-watch-note { grid-column: 1 / -1; grid-row: 2; width: 100%; margin: .85rem 0 0; color: var(--ink-soft); font-size: .82rem; line-height: 1.45; }
+.recent-watch-note { width: 100%; margin: .85rem 0 0; color: var(--ink-soft); font-size: .82rem; line-height: 1.45; }
 .recent-watch-note small { display: block; margin-bottom: .2rem; color: var(--accent); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; }
 @media (max-width: 900px) {
   .diary-layout { grid-template-columns: minmax(0, 1fr) 330px !important; gap: 1.25rem !important; }
