@@ -69,6 +69,19 @@ textarea {
   .watched-item { grid-template-columns: 52px minmax(0, 1fr); }
   .watched-item img { width: 52px; height: 76px; }
 }
+
+.watched-item { width: 100%; grid-template-columns: 64px minmax(0, 1fr); }
+.watched-item > div { min-width: 0; width: 100%; }
+.watched-item strong { overflow: visible; text-overflow: clip; white-space: normal; }
+.watched-item span { overflow: visible; text-overflow: clip; white-space: normal; }
+.watched-item p, .watched-note { width: 100%; max-width: none; }
+
+/* Let the watched-film copy occupy the full column beside its poster. */
+.watched-item { width: 100%; grid-template-columns: 64px minmax(0, 1fr); }
+.watched-item > div { min-width: 0; width: 100%; }
+.watched-item strong { overflow: visible; text-overflow: clip; white-space: normal; }
+.watched-item span { overflow: visible; text-overflow: clip; white-space: normal; }
+.watched-item p, .watched-note { width: 100%; max-width: none; }
 .nav-wrap {
   display: flex;
   justify-content: space-between;
