@@ -847,7 +847,6 @@ body::after {
 
 .diary-section { padding-top: 4rem; }
 .diary-section .section-head { display: flex; align-items: end; justify-content: space-between; gap: 2rem; border-bottom: 1px solid #51282e; padding-bottom: 1.2rem; }
-.diary-section .section-head::after { content: "SCREENINGS / PERSONAL NOTES"; color: #845b59; font-size: .62rem; letter-spacing: .16em; }
 .diary-row { background: linear-gradient(100deg, #1a1013, #130e10 65%); border-color: #45252b; border-left: 3px solid #592831; box-shadow: 0 12px 28px rgba(0, 0, 0, .18); }
 .diary-row:hover, .diary-row:focus-visible { background: linear-gradient(100deg, #2a1419, #171013 65%); border-color: #8d3e48; border-left-color: #d58d55; box-shadow: 0 16px 36px rgba(0, 0, 0, .3); }
 .diary-row-latest { min-height: 190px; padding: 1.5rem 1.7rem; background: linear-gradient(105deg, #35171e 0%, #1d1115 48%, #120d10 100%); border: 1px solid #87404a; border-left: 5px solid #d58d55; box-shadow: 0 20px 50px rgba(0, 0, 0, .36), inset 0 1px 0 rgba(255, 198, 151, .08); }
