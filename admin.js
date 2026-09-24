@@ -19,6 +19,18 @@ let authorSecret = "";
 let editingPostId = null;
 let selectedFilmData = null;
 
+async function readJson(response) {
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new Error(`Server returned an empty response (${response.status}).`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Server returned invalid data (${response.status}).`);
+  }
+}
+
 function escapeHtml(value = "") {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
 }
@@ -30,7 +42,7 @@ function posterUrl(path) {
 async function loadPosts() {
   const response = await fetch("/api/posts");
   if (!response.ok) throw new Error("Critics could not be loaded.");
-  return response.json();
+  return readJson(response);
 }
 
 async function authenticate(password) {
@@ -73,7 +85,7 @@ async function searchFilms() {
   filmSearchStatus.textContent = "Searching...";
   try {
     const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
-    const payload = await response.json();
+    const payload = await readJson(response);
     if (!response.ok) throw new Error(payload.error || "Search unavailable.");
     filmResults.innerHTML = payload.results.slice(0, 6).map((film) => `<button type="button" class="film-result" data-film='${escapeHtml(JSON.stringify(film))}'>${film.poster_path ? `<img src="${escapeHtml(posterUrl(film.poster_path))}" alt="" />` : ""}<span><strong>${escapeHtml(film.title)}</strong><small>${escapeHtml((film.release_date || "").slice(0, 4))}</small></span></button>`).join("");
     filmResults.querySelectorAll(".film-result").forEach((button) => button.addEventListener("click", () => selectFilm(JSON.parse(button.dataset.film))));

@@ -119,6 +119,8 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             return self.send_json({"error": "TMDB could not be reached from this server."}, 502)
         except (TimeoutError, json.JSONDecodeError):
             return self.send_json({"error": "TMDB returned an invalid or delayed response."}, 502)
+        except Exception:
+            return self.send_json({"error": "Film catalogue request failed on the server."}, 502)
 
     def send_json(self, payload, status=200):
         body = json.dumps(payload).encode("utf-8")
