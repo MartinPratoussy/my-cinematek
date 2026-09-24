@@ -101,10 +101,17 @@ function renderFeaturedReview(post) {
       <h2>${escapeHtml(post.movieTitle)}</h2>
       <p class="featured-review-title">${escapeHtml(post.title)}</p>
       <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span><span>${Number(post.rating).toFixed(1)} / 10</span></div>
-      <button class="secondary-btn" type="button" data-featured-id="${post.id}">Lire</button>
     </div>
   `;
-  featuredReview.querySelector("button")?.addEventListener("click", () => openModal(post));
+  featuredReview.setAttribute("role", "button");
+  featuredReview.setAttribute("tabindex", "0");
+  featuredReview.onclick = () => openModal(post);
+  featuredReview.onkeydown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openModal(post);
+    }
+  };
 }
 function renderDiary(posts, append = false) {
   if (!posts.length) {
@@ -147,8 +154,8 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape" && 
 let postOffset = 0;
 loadPosts().then((posts) => {
   postOffset = posts.length;
-  const featuredPost = posts[1] || posts[0];
-  const diaryPosts = posts.length > 1 ? [posts[0], ...posts.slice(2)] : posts;
+  const featuredPost = posts[0];
+  const diaryPosts = posts.length > 1 ? posts.slice(1) : posts;
   if (featuredPost) renderFeaturedReview(featuredPost);
   renderDiary(diaryPosts);
   loadMorePosts.hidden = posts.length < 8;
