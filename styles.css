@@ -85,6 +85,10 @@ textarea {
 .venue-map-button { display: inline-flex; align-items: center; gap: .28rem; margin-left: .3rem; padding: .18rem .48rem; color: #f5d9bd !important; background: rgba(143, 57, 67, .45); border: 1px solid #8d4650; border-radius: 999px; font-size: .64rem; letter-spacing: .04em; line-height: 1.2; text-decoration: none !important; white-space: nowrap; transition: background .2s ease, border-color .2s ease, transform .2s ease; }
 .venue-map-button span { margin: 0; color: var(--accent-strong); font-size: .9rem; line-height: 1; }
 .venue-map-button:hover, .venue-map-button:focus-visible { color: #fff1e5 !important; background: #9e4652; border-color: var(--accent-strong); transform: translateY(-1px); outline: none; }
+.viewing-context { margin: 1.5rem 0 2.5rem; padding: .85rem 1rem; border: 1px solid #6b343d; border-left: 4px solid var(--accent); background: rgba(112, 35, 46, .18); }
+.viewing-context .eyebrow { margin-bottom: .45rem; }
+.viewing-context-line { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem 1.2rem; color: var(--ink-soft); font-family: Georgia, "Times New Roman", serif; font-size: 1rem; }
+.viewing-context-line > span + span { padding-left: 1.2rem; border-left: 1px solid #704049; }
 @media (max-width: 900px) {
   .diary-layout { grid-template-columns: minmax(0, 1fr) 330px !important; gap: 1.25rem !important; }
 }
