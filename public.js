@@ -97,10 +97,10 @@ function renderFeaturedReview(post) {
   featuredReview.innerHTML = `
     <div class="featured-review-cover">${film.poster ? `<img src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(post.movieTitle)}" />` : ""}</div>
     <div class="featured-review-copy">
-      <p class="eyebrow">sélection</p>
-      <h2>${escapeHtml(post.movieTitle)}</h2>
-      <p class="featured-review-title">${escapeHtml(post.title)}</p>
-      <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span><span>${Number(post.rating).toFixed(1)} / 10</span></div>
+      <p class="eyebrow">dernière critique</p>
+      <h2>${escapeHtml(post.title)}</h2>
+      <p class="featured-review-title">${escapeHtml(post.movieTitle)}</p>
+      <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span></div>
     </div>
   `;
   featuredReview.setAttribute("role", "button");

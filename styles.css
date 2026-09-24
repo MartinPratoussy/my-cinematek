@@ -583,7 +583,6 @@ textarea {
 .featured-review {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     width: 100%;
     min-height: 520px;
     overflow: hidden;
@@ -601,7 +600,7 @@ textarea {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(12, 9, 10, 0.06), rgba(12, 9, 10, 0.4));
+    background: linear-gradient(180deg, rgba(12, 9, 10, 0.06), rgba(12, 9, 10, 0.42));
     pointer-events: none;
 }
 
@@ -614,10 +613,10 @@ textarea {
 }
 
 .featured-review-cover {
+    flex: 1 1 auto;
+    min-height: 360px;
     width: 100%;
-    height: 330px;
     overflow: hidden;
-    border-bottom: 1px solid rgba(223, 203, 180, 0.25);
     background: rgba(17, 17, 17, 0.12);
     position: relative;
     z-index: 0;
@@ -626,8 +625,10 @@ textarea {
 .featured-review-cover img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center top;
     display: block;
+    background: #120d10;
 }
 
 .featured-review-copy {
@@ -652,8 +653,10 @@ textarea {
 .featured-review-title {
     margin: 0;
     color: #d7c2ac;
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     line-height: 1.3;
 }
 
