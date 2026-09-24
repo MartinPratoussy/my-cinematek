@@ -91,17 +91,23 @@ function criticMarkup(post) {
 }
 function openModal(post) { modalContent.innerHTML = criticMarkup(post); modal.hidden = false; document.body.classList.add("modal-open"); modal.querySelector(".modal-close").focus(); modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle })); }
 function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
+function truncateText(value = "", maxLength = 180) {
+  const text = String(value).replace(/\s+/g, " ").trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1).trim()}…` : text;
+}
 function renderFeaturedReview(post) {
   if (!featuredReview || !post) return;
   const film = post.film || {};
+  const teaser = truncateText(post.body || "", 170);
   featuredReview.innerHTML = `
-    <div class="featured-review-cover">${film.poster ? `<img src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(post.movieTitle)}" />` : ""}</div>
     <div class="featured-review-copy">
       <p class="eyebrow">dernière critique</p>
       <h2>${escapeHtml(post.title)}</h2>
       <p class="featured-review-title">${escapeHtml(post.movieTitle)}</p>
+      <p class="featured-review-teaser">${escapeHtml(teaser)}</p>
       <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span></div>
     </div>
+    <div class="featured-review-cover">${film.poster ? `<img src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(post.movieTitle)}" />` : ""}</div>
   `;
   featuredReview.setAttribute("role", "button");
   featuredReview.setAttribute("tabindex", "0");
