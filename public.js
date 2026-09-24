@@ -6,7 +6,6 @@ const modalContent = document.getElementById("modal-content");
 const filmModal = document.getElementById("film-modal");
 const filmModalContent = document.getElementById("film-modal-content");
 const watchedSentinel = document.getElementById("watched-sentinel");
-const featuredReview = document.getElementById("featured-review");
 
 let watchedItems = [];
 let watchedOffset = 0;
@@ -91,28 +90,12 @@ function criticMarkup(post) {
 }
 function openModal(post) { modalContent.innerHTML = criticMarkup(post); modal.hidden = false; document.body.classList.add("modal-open"); modal.querySelector(".modal-close").focus(); modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle })); }
 function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
-function renderFeaturedReview(post) {
-  if (!featuredReview || !post) return;
-  const film = post.film || {};
-  featuredReview.innerHTML = `
-    <div class="featured-review-cover">${film.poster ? `<img src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(post.movieTitle)}" />` : ""}</div>
-    <div class="featured-review-copy">
-      <p class="eyebrow">dernière critique</p>
-      <h2>${escapeHtml(post.movieTitle)}</h2>
-      <p class="featured-review-title">${escapeHtml(post.title)}</p>
-      <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span><span>${Number(post.rating).toFixed(1)} / 10</span></div>
-      <div class="featured-review-context">${venueButton(post.venue) || escapeHtml(post.context || "Séance personnelle")}</div>
-      <button class="secondary-btn" type="button" data-featured-id="${post.id}">Lire la critique</button>
-    </div>
-  `;
-  featuredReview.querySelector("button")?.addEventListener("click", () => openModal(post));
-}
 function renderDiary(posts, append = false) {
   if (!posts.length) {
     if (!append) postsList.innerHTML = '<p class="empty-state">Le journal est vide.</p>';
     return;
   }
-  const markup = posts.map((post, index) => `<button class="diary-row ${!append && index === 0 ? "diary-row-latest" : ""}" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(formatDate(post.date))}${!append && index === 0 ? "<small>dernière</small>" : ""}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
+  const markup = posts.map((post) => `<button class="diary-row" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(formatDate(post.date))}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
   if (append) postsList.insertAdjacentHTML("beforeend", markup); else postsList.innerHTML = markup;
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
 }
@@ -148,9 +131,7 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape" && 
 let postOffset = 0;
 loadPosts().then((posts) => {
   postOffset = posts.length;
-  const featuredPost = posts[0];
-  const diaryPosts = posts.slice(1);
-  if (featuredPost) renderFeaturedReview(featuredPost);
+  const diaryPosts = posts.length > 1 ? [...posts.slice(1), posts[0]] : posts;
   renderDiary(diaryPosts);
   loadMorePosts.hidden = posts.length < 8;
   return loadWatched(0, 8);
