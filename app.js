@@ -146,7 +146,7 @@ function sortPosts(posts) {
 
 function renderPosts(posts) {
   if (!posts.length) {
-    postsList.innerHTML = '<p class="empty-state">No reviews yet. Start by publishing your first one.</p>';
+    postsList.innerHTML = '<p class="empty-state">The diary is empty.</p>';
     return;
   }
 

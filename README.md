@@ -16,6 +16,8 @@ Then open:
 
 http://localhost:8000
 
+The public site is read-only. Open `/admin.html` to sign in and write or edit critics.
+
 ## Notes
 
 - Reviews are stored by the server, using local SQLite for development and PostgreSQL when `DATABASE_URL` is set.

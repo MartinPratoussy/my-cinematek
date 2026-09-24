@@ -9,13 +9,6 @@ from urllib.request import Request, urlopen
 TMDB_API_URL = "https://api.themoviedb.org/3/search/movie"
 DEFAULT_DB = os.path.join(os.environ.get("LOCALAPPDATA", os.path.dirname(__file__)), "my-cinematek.db")
 
-DEFAULT_POSTS = [
-    {"title": "A strange, luminous dream", "movieTitle": "The Green Knight", "date": "2026-09-04", "rating": 8.5, "context": "midnight screening", "tags": ["fantasy", "dreamlike", "theater"], "body": "The Green Knight feels like a myth arriving in slow motion.", "film": {"title": "The Green Knight", "year": "2021"}},
-    {"title": "A quiet kind of magic", "movieTitle": "Past Lives", "date": "2026-08-17", "rating": 9, "context": "sofa watch", "tags": ["drama", "quiet", "relationship"], "body": "Past Lives is a film that understands how silence can carry as much emotional weight as any big speech.", "film": {"title": "Past Lives", "year": "2023"}},
-    {"title": "A candy-colored rush", "movieTitle": "Spider-Man: Across the Spider-Verse", "date": "2026-07-21", "rating": 9.5, "context": "theater", "tags": ["animation", "comic", "energy"], "body": "This movie absolutely detonates with energy.", "film": {"title": "Spider-Man: Across the Spider-Verse", "year": "2023"}},
-]
-
-
 class Database:
     def __init__(self):
         self.postgres = bool(os.environ.get("DATABASE_URL"))
@@ -42,10 +35,6 @@ class Database:
     def init_schema(self):
         identity = "SERIAL PRIMARY KEY" if self.postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
         self.query(f"CREATE TABLE IF NOT EXISTS posts (id {identity}, title TEXT NOT NULL, movie_title TEXT NOT NULL, watched_date TEXT NOT NULL, rating REAL NOT NULL, context TEXT, tags TEXT NOT NULL, body TEXT NOT NULL, film TEXT NOT NULL)")
-        if not self.query("SELECT id FROM posts LIMIT 1", fetch=True):
-            for post in DEFAULT_POSTS:
-                self.insert_post(post)
-
     def insert_post(self, post):
         values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("tags", [])), post["body"], json.dumps(post.get("film", {})))
         if self.postgres:
@@ -152,43 +141,7 @@ from urllib.request import Request, urlopen
 
 TMDB_API_URL = "https://api.themoviedb.org/3/search/movie"
 
-DEFAULT_DB = os.path.join(os.path.dirname(__file__), "cinematek.db")
-
-DEFAULT_POSTS = [
-    {
-        "id": 1,
-        "title": "A strange, luminous dream",
-        "movieTitle": "The Green Knight",
-        "date": "2026-09-04",
-        "rating": 8.5,
-        "context": "midnight screening",
-        "tags": ["fantasy", "dreamlike", "theater"],
-        "body": "The Green Knight feels like a myth arriving in slow motion. I went in expecting a familiar fantasy story and instead got something more elemental: a hallucinatory, patient film about time, temptation, and the cost of courage.",
-        "film": {"title": "The Green Knight", "year": "2021"},
-    },
-    {
-        "id": 2,
-        "title": "A quiet kind of magic",
-        "movieTitle": "Past Lives",
-        "date": "2026-08-17",
-        "rating": 9,
-        "context": "sofa watch",
-        "tags": ["drama", "quiet", "relationship"],
-        "body": "Past Lives is a film that understands how silence can carry as much emotional weight as any big speech. It is gentle without being empty, and it trusts the viewer to feel the ache of missed timing and long-buried connection.",
-        "film": {"title": "Past Lives", "year": "2023"},
-    },
-    {
-        "id": 3,
-        "title": "A candy-colored rush",
-        "movieTitle": "Spider-Man: Across the Spider-Verse",
-        "date": "2026-07-21",
-        "rating": 9.5,
-        "context": "theater",
-        "tags": ["animation", "comic", "energy"],
-        "body": "This movie absolutely detonates with energy. It moves with such confidence that even its most chaotic sequences feel purposeful. The visual language is thrilling, and the frames are full of ideas, motion, and personality.",
-        "film": {"title": "Spider-Man: Across the Spider-Verse", "year": "2023"},
-    },
-]
+DEFAULT_DB = os.path.join(os.environ.get("LOCALAPPDATA", os.path.dirname(__file__)), "my-cinematek.db")
 
 class Database:
     def __init__(self):
@@ -225,10 +178,6 @@ class Database:
                 tags TEXT NOT NULL, body TEXT NOT NULL, film TEXT NOT NULL
             )
         """)
-        if not self.query("SELECT id FROM posts LIMIT 1", fetch=True):
-            for post in DEFAULT_POSTS:
-                self.insert_post(post)
-
     def insert_post(self, post):
         values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("tags", [])), post["body"], json.dumps(post.get("film", {})))
         if self.postgres:

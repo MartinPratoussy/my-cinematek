@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: my-cinematek
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /api/posts
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false
+      - key: AUTHOR_PASSWORD
+        sync: false

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin | my-cinematek</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a href="/" class="brand">my-cinematek</a>
+        <nav class="main-nav" aria-label="Admin navigation">
+          <a href="/">View site</a>
+          <a href="#editor">Editor</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container site-main admin-main">
+      <section id="login-panel" class="admin-login panel">
+        <p class="eyebrow">private room</p>
+        <h1>Admin editor</h1>
+        <p>Sign in to write, edit, and publish critics.</p>
+        <form id="login-form">
+          <label for="author-password">Author password</label>
+          <div class="search-row">
+            <input id="author-password" type="password" autocomplete="current-password" required />
+            <button class="primary-btn" type="submit">Enter</button>
+          </div>
+          <p id="login-status" class="field-hint" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="editor" class="admin-editor hidden">
+        <div class="admin-heading">
+          <div>
+            <p class="eyebrow">private editor</p>
+            <h1>Write a critic</h1>
+          </div>
+          <button id="logout" class="secondary-btn" type="button">Lock editor</button>
+        </div>
+        <p id="editor-status" class="editor-status" aria-live="polite"></p>
+
+        <form id="review-form" class="panel admin-form">
+          <div class="film-picker">
+            <label for="film-search">Find a film</label>
+            <div class="search-row">
+              <input id="film-search" type="search" placeholder="Film title" autocomplete="off" />
+              <button id="film-search-button" class="secondary-btn" type="button">Search</button>
+            </div>
+            <p id="film-search-status" class="field-hint" aria-live="polite"></p>
+            <div id="film-results" class="film-results"></div>
+            <div id="selected-film" class="selected-film hidden"></div>
+          </div>
+
+          <input id="movie-title" type="hidden" required />
+          <input id="film-data" type="hidden" />
+          <div class="field-grid">
+            <label>Critic title<input id="review-title" type="text" required /></label>
+            <label>Date watched<input id="watch-date" type="date" required /></label>
+            <label>Rating<input id="rating" type="number" min="0" max="10" step="0.5" value="8" required /></label>
+          </div>
+          <label>Tags<input id="tags" type="text" placeholder="Optional tags" /></label>
+          <label>Viewing context<input id="context" type="text" placeholder="Where did you watch it?" /></label>
+          <label>Your critic<textarea id="review-body" rows="12" placeholder="Write what stayed with you." required></textarea></label>
+          <div class="form-actions">
+            <button id="publish-button" class="primary-btn" type="submit">Publish critic</button>
+            <button id="cancel-edit" class="secondary-btn hidden" type="button">Cancel edit</button>
+          </div>
+        </form>
+
+        <section class="admin-posts">
+          <div class="section-head"><p class="eyebrow">published</p><h2>Your critics</h2></div>
+          <div id="admin-post-list" class="admin-post-list"></div>
+        </section>
+      </section>
+    </main>
+    <script src="admin.js"></script>
+  </body>
+</html>

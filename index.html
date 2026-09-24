@@ -50,85 +50,6 @@
         <div id="tags-list" class="tag-list"></div>
       </section>
 
-      <section id="write" class="composer panel hidden">
-        <div class="section-head">
-          <p class="eyebrow">private editor</p>
-          <h2>New entry</h2>
-        </div>
-
-        <div id="editor-status" class="editor-status" aria-live="polite"></div>
-
-        <form id="review-form" class="hidden">
-          <div class="film-picker">
-            <label for="film-search">Find a film</label>
-            <div class="search-row">
-              <input id="film-search" type="search" placeholder="Search by film title" autocomplete="off" />
-              <button type="button" id="film-search-button" class="secondary-btn">Search</button>
-            </div>
-            <div id="film-search-status" class="field-hint" aria-live="polite"></div>
-            <div id="film-results" class="film-results" aria-live="polite"></div>
-            <div id="selected-film" class="selected-film hidden"></div>
-          </div>
-
-          <input id="movie-title" name="movieTitle" type="hidden" required />
-          <input id="film-data" name="filmData" type="hidden" />
-
-          <div class="field-grid">
-            <label>
-              Review title
-              <input id="review-title" name="title" type="text" placeholder="A strange, luminous dream" required />
-            </label>
-            <label>
-              Date watched
-              <input id="watch-date" name="date" type="date" required />
-            </label>
-            <label>
-              Rating
-              <input id="rating" name="rating" type="number" min="0" max="10" step="0.5" value="8" required />
-            </label>
-          </div>
-
-          <label>
-            Tags
-            <input id="tags" name="tags" type="text" placeholder="fantasy, theater, dreamlike" />
-          </label>
-
-          <label>
-            Context
-            <input id="context" name="context" type="text" placeholder="midnight screening / sofa watch" />
-          </label>
-
-          <label>
-            Review
-            <textarea id="review-body" name="body" rows="8" placeholder="What did it feel like? What stayed with you?" required></textarea>
-          </label>
-
-          <div class="form-actions">
-            <button type="submit" class="primary-btn">Publish review</button>
-            <button type="button" id="cancel-edit" class="secondary-btn hidden">Cancel edit</button>
-          </div>
-        </form>
-      </section>
-
-      <section id="author-gate" class="author-gate panel hidden">
-        <div class="section-head">
-          <p class="eyebrow">private</p>
-          <h2>Author access</h2>
-        </div>
-
-        <p class="private-copy">
-          This is a vitrine for readers. Only the site owner can publish or edit reviews.
-        </p>
-
-        <div class="author-login-row">
-          <label class="password-field">
-            Password
-            <input id="author-password" type="password" placeholder="Enter author password" />
-          </label>
-          <button type="button" id="author-login" class="primary-btn">Open editor</button>
-        </div>
-      </section>
-
       <section id="about" class="about-note">
         <p class="eyebrow">about this place</p>
         <p>A quiet shelf of reactions, revisits, and small discoveries. No scores chasing consensus. Just one person watching films and writing down what stayed.</p>
@@ -137,9 +58,8 @@
 
     <footer class="site-footer container">
       <span>my-cinematek · the lights stay low</span>
-      <button type="button" id="author-access" class="owner-link">owner access</button>
     </footer>
 
-    <script src="app.js"></script>
+    <script src="public.js"></script>
   </body>
 </html>
