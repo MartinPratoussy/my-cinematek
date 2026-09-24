@@ -663,3 +663,10 @@ input, textarea { color: var(--ink); background: #242323; border-color: var(--bo
   .admin-heading { align-items: flex-start; flex-direction: column; }
   .venue-fields { grid-template-columns: 1fr; gap: 0; }
 }
+
+@media (min-width: 761px) {
+  html, body { background-color: #111315 !important; }
+  body { background: radial-gradient(circle at 50% -10%, #37302a 0, #111315 42rem) !important; color: #f3eadb !important; }
+  .site-header { background-color: rgba(17, 19, 21, .9) !important; }
+  .panel, .post-card { background-color: #201f1e !important; color: #f3eadb !important; }
+}
