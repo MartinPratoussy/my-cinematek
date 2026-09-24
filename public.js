@@ -6,6 +6,7 @@ const modalContent = document.getElementById("modal-content");
 const filmModal = document.getElementById("film-modal");
 const filmModalContent = document.getElementById("film-modal-content");
 const watchedSentinel = document.getElementById("watched-sentinel");
+const featuredReview = document.getElementById("featured-review");
 
 let watchedItems = [];
 let watchedOffset = 0;
@@ -90,6 +91,22 @@ function criticMarkup(post) {
 }
 function openModal(post) { modalContent.innerHTML = criticMarkup(post); modal.hidden = false; document.body.classList.add("modal-open"); modal.querySelector(".modal-close").focus(); modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle })); }
 function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
+function renderFeaturedReview(post) {
+  if (!featuredReview || !post) return;
+  const film = post.film || {};
+  featuredReview.innerHTML = `
+    <div class="featured-review-cover">${film.poster ? `<img src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(post.movieTitle)}" />` : ""}</div>
+    <div class="featured-review-copy">
+      <p class="eyebrow">dernière critique</p>
+      <h2>${escapeHtml(post.movieTitle)}</h2>
+      <p class="featured-review-title">${escapeHtml(post.title)}</p>
+      <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span><span>${Number(post.rating).toFixed(1)} / 10</span></div>
+      <div class="featured-review-context">${venueButton(post.venue) || escapeHtml(post.context || "Séance personnelle")}</div>
+      <button class="secondary-btn" type="button" data-featured-id="${post.id}">Lire la critique</button>
+    </div>
+  `;
+  featuredReview.querySelector("button")?.addEventListener("click", () => openModal(post));
+}
 function renderDiary(posts, append = false) {
   if (!posts.length) {
     if (!append) postsList.innerHTML = '<p class="empty-state">Le journal est vide.</p>';
@@ -129,7 +146,13 @@ document.querySelectorAll("[data-close-modal]").forEach((element) => element.add
 document.querySelectorAll("[data-close-film-modal]").forEach((element) => element.addEventListener("click", closeFilmModal));
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
 let postOffset = 0;
-loadPosts().then((posts) => { postOffset = posts.length; renderDiary(posts); loadMorePosts.hidden = posts.length < 8; return loadWatched(0, 8); }).then((items) => {
+loadPosts().then((posts) => {
+  postOffset = posts.length;
+  if (posts[0]) renderFeaturedReview(posts[0]);
+  renderDiary(posts);
+  loadMorePosts.hidden = posts.length < 8;
+  return loadWatched(0, 8);
+}).then((items) => {
   watchedOffset = items.length;
   renderWatched(items);
   hasMoreWatched = items.length === 8;
