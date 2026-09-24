@@ -642,7 +642,7 @@ body::before {
 .main-nav a:hover, .main-nav a:focus-visible { color: var(--accent-strong); }
 .eyebrow { color: var(--accent); letter-spacing: 0.2em; }
 .hero { max-width: 780px; padding: 5rem 0 4rem; }
-.hero h1 { max-width: 780px; font-size: clamp(2.8rem, 7vw, 5.8rem); line-height: 0.98; }
+.hero h1 { max-width: 780px; font-size: clamp(2.8rem, 7vw, 5.8rem); line-height: 0.98; text-transform: lowercase; }
 .lede { color: var(--ink-soft); }
 
 .featured-post {
