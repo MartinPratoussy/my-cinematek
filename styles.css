@@ -54,65 +54,14 @@ textarea {
     border-bottom: 1px solid var(--border);
 }
 
-
-/* Give the recent-watch shelf room to breathe on desktop. */
 .diary-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(350px, 390px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
     gap: 2.5rem;
-}
-
-.watched-shelf {
-    padding: 1.6rem;
-}
-
-.watched-item {
-    grid-template-columns: 58px minmax(0, 1fr);
-    gap: 1rem;
-    min-height: 96px;
-    padding: .85rem 0;
-}
-
-.watched-item img {
-    width: 58px;
-    height: 84px;
-}
-
-.watched-item p,
-.watched-note {
-    max-width: none;
-}
-
-@media (max-width: 900px) {
-    .diary-layout {
-        grid-template-columns: minmax(0, 1fr) 320px;
-        gap: 1.25rem;
-    }
-}
-
-@media (max-width: 760px) {
-    .diary-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .watched-item {
-        grid-template-columns: 52px minmax(0, 1fr);
-    }
-
-    .watched-item img {
-        width: 52px;
-        height: 76px;
-    }
-}
-
-/* Recent watches: isolated component, independent of the legacy watched-item rules. */
-.diary-layout {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 380px !important;
-    gap: 2.5rem !important;
     align-items: start;
 }
 
-#watched-shelf {
+.watched-shelf {
     width: 100%;
     min-width: 0;
     margin-top: 3rem;
@@ -375,139 +324,7 @@ textarea {
     }
 }
 
-/* Final watched-row width reset. Keep this last in the cascade. */
-.watched-shelf,
-.watched-list,
-.watched-item {
-    min-width: 0;
-    width: 100%;
-}
-
-.watched-item {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 72px !important;
-    grid-template-rows: auto auto;
-    column-gap: 1rem;
-    align-items: start;
-}
-
-.watched-main {
-    grid-column: 1;
-    grid-row: 1;
-    min-width: 0;
-}
-
-.watched-main strong,
-.watched-main span {
-    display: block;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-}
-
-.watched-poster {
-    grid-column: 2;
-    grid-row: 1;
-    width: 72px;
-    height: 104px;
-    object-fit: cover;
-    border: 1px solid #6f3840;
-}
-
-.watched-note {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
-    max-width: none;
-    margin-top: .8rem;
-}
-
-@media (max-width: 760px) {
-    .watched-item {
-        grid-template-columns: minmax(0, 1fr) 60px !important;
-    }
-
-    .watched-poster {
-        width: 60px;
-        height: 88px;
-    }
-}
-
-.watched-item {
-    width: 100%;
-    grid-template-columns: 64px minmax(0, 1fr);
-}
-
-.watched-item>div {
-    min-width: 0;
-    width: 100%;
-}
-
-.watched-item strong {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-}
-
-.watched-item span {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-}
-
-.watched-item p,
-.watched-note {
-    width: 100%;
-    max-width: none;
-}
-
-/* Final explicit sizing: the copy must fill the entire space beside the poster. */
-.watched-shelf,
-.watched-list,
-.watched-item {
-    min-width: 0;
-    width: 100%;
-}
-
-.watched-item {
-    display: grid !important;
-    grid-template-columns: 64px minmax(0, 1fr) !important;
-}
-
-.watched-item>div {
-    display: block !important;
-    width: auto !important;
-    min-width: 0 !important;
-}
-
-/* Let the watched-film copy occupy the full column beside its poster. */
-.watched-item {
-    width: 100%;
-    grid-template-columns: 64px minmax(0, 1fr);
-}
-
-.watched-item>div {
-    min-width: 0;
-    width: 100%;
-}
-
-.watched-item strong {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-}
-
-.watched-item span {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-}
-
-.watched-item p,
-.watched-note {
-    width: 100%;
-    max-width: none;
-}
+/* Recent watches follow their own compact row layout; legacy watched-item styles were removed to avoid conflicting grid rules. */
 
 .nav-wrap {
     display: flex;
@@ -550,23 +367,6 @@ textarea {
 .hero {
     display: block;
     padding: 2rem 0 2.5rem;
-}
-
-.hero-copy {
-    display: grid;
-    gap: 0.55rem;
-    align-content: center;
-    display: none;
-}
-
-.hero-lede {
-    margin: 0;
-    max-width: 640px;
-    color: var(--ink);
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(2.1rem, 4vw, 3.2rem);
-    line-height: 1;
-    letter-spacing: -0.05em;
 }
 
 .eyebrow {
@@ -857,20 +657,26 @@ textarea {
 
     .secondary-btn {
         appearance: none;
-        border: 1px solid var(--border);
+        border: 1px solid rgba(217, 204, 185, 0.7);
         border-radius: 999px;
-        background: transparent;
-        color: var(--ink);
-        font-weight: 700;
-        padding: 0.9rem 1.4rem;
+        background: rgba(255, 255, 255, 0.025);
+        color: #f3e9dc;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        padding: 0.8rem 1.2rem;
         cursor: pointer;
-        margin-left: 0.75rem;
+        margin-left: 0;
+        transition: transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
     }
 
     .secondary-btn:hover,
     .secondary-btn:focus-visible {
-        border-color: var(--accent);
-        color: var(--accent-strong);
+        border-color: rgba(229, 170, 94, 0.9);
+        background: rgba(201, 106, 62, 0.08);
+        box-shadow: inset 0 0 0 1px rgba(229, 170, 94, 0.18);
+        transform: translateY(-1px);
+        color: #f7ebdb;
+        outline: none;
     }
 
     .section-head {
@@ -2275,8 +2081,35 @@ body.modal-open {
 }
 
 .load-more {
-    display: block;
-    margin: 1rem auto 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 220px;
+    margin: 1.2rem auto 0;
+    border-radius: 999px;
+    border: 1px solid rgba(164, 127, 99, 0.7);
+    background: rgba(255, 255, 255, 0.015);
+    color: #f4e9db;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+}
+
+.load-more:hover,
+.load-more:focus-visible {
+    border-color: rgba(229, 170, 94, 0.95);
+    background: rgba(201, 106, 62, 0.08);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    color: #fff3e5;
+    outline: none;
+    cursor: pointer;
+}
+
+.load-more:active {
+    transform: translateY(0);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .critic-modal[hidden] {
@@ -2549,54 +2382,5 @@ body.modal-open {
 
     .watched-list {
         grid-template-columns: 1fr;
-    }
-}
-
-/* Final desktop sizing for the recent-watch side panel. */
-.diary-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(350px, 390px);
-    gap: 2.5rem;
-}
-
-.watched-shelf {
-    padding: 1.6rem;
-}
-
-.watched-item {
-    grid-template-columns: 58px minmax(0, 1fr);
-    gap: 1rem;
-    min-height: 96px;
-    padding: .85rem 0;
-}
-
-.watched-item img {
-    width: 58px;
-    height: 84px;
-}
-
-.watched-item p,
-.watched-note {
-    max-width: none;
-}
-
-@media (max-width: 900px) {
-    .diary-layout {
-        grid-template-columns: minmax(0, 1fr) 320px;
-        gap: 1.25rem;
-    }
-}
-
-@media (max-width: 760px) {
-    .diary-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .watched-item {
-        grid-template-columns: 52px minmax(0, 1fr);
-    }
-
-    .watched-item img {
-        width: 52px;
-        height: 76px;
     }
 }
