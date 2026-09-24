@@ -111,7 +111,7 @@ class CinematekHandler(SimpleHTTPRequestHandler):
     def search_tmdb(self, query):
         key = os.environ.get("TMDB_API_KEY")
         if not key: return self.send_json({"error": "Film search is not configured yet."}, 503)
-        request = Request(f"{TMDB_API_URL}?api_key={key}&language=en-US&include_adult=false&query={query}", headers={"Accept": "application/json"})
+        request = Request(f"{TMDB_API_URL}?api_key={key}&language=en-US&include_adult=false&query={quote_plus(query)}", headers={"Accept": "application/json"})
         try:
             with urlopen(request, timeout=10) as response: return self.send_json({"results": json.loads(response.read().decode()).get("results", [])})
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError): return self.send_json({"error": "Film catalogue is temporarily unavailable."}, 502)
