@@ -18,6 +18,9 @@ const watchedFilmSearch = document.getElementById("watched-film-search");
 const watchedFilmResults = document.getElementById("watched-film-results");
 const watchedFilmData = document.getElementById("watched-film-data");
 const watchedDate = document.getElementById("watched-date");
+const watchedRating = document.getElementById("watched-rating");
+const watchedRewatch = document.getElementById("watched-rewatch");
+const watchedNote = document.getElementById("watched-note");
 const watchedVenueType = document.getElementById("watched-venue-type");
 const watchedVenueName = document.getElementById("watched-venue-name");
 const watchedVenueField = document.getElementById("watched-venue-name-field");
@@ -257,7 +260,7 @@ watchedForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const film = watchedFilmData.value ? JSON.parse(watchedFilmData.value) : null;
   if (!film?.id || !watchedDate.value) { watchedStatus.textContent = "Choose a film and date first."; return; }
-  const response = await fetch("/api/watched", { method: "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify({ date: watchedDate.value, film: { id: film.id, title: film.title, year: (film.release_date || "").slice(0, 4), poster: posterUrl(film.poster_path) }, venue: { type: watchedVenueType.value, name: watchedVenueType.value === "home" ? "My TV" : watchedVenueName.value.trim(), location: "" } }) });
+  const response = await fetch("/api/watched", { method: "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify({ date: watchedDate.value, rating: watchedRating.value ? Number(watchedRating.value) : null, note: watchedNote.value.trim(), rewatch: watchedRewatch.checked, film: { id: film.id, title: film.title, year: (film.release_date || "").slice(0, 4), poster: posterUrl(film.poster_path) }, venue: { type: watchedVenueType.value, name: watchedVenueType.value === "home" ? "My TV" : watchedVenueName.value.trim(), location: "" } }) });
   if (!response.ok) { watchedStatus.textContent = "The watch could not be saved."; return; }
   watchedForm.reset(); watchedFilmData.value = ""; watchedStatus.textContent = "Added to recent watches.";
 });

@@ -47,11 +47,16 @@ class Database:
                 self.query(f"ALTER TABLE posts ADD COLUMN {column} {definition}")
             except Exception:
                 pass
-        self.query(f"CREATE TABLE IF NOT EXISTS watched_films (id {identity}, watched_date TEXT NOT NULL, venue TEXT NOT NULL DEFAULT '', film TEXT NOT NULL)")
+        self.query(f"CREATE TABLE IF NOT EXISTS watched_films (id {identity}, watched_date TEXT NOT NULL, venue TEXT NOT NULL DEFAULT '', rating REAL, note TEXT NOT NULL DEFAULT '', rewatch INTEGER NOT NULL DEFAULT 0, film TEXT NOT NULL)")
+        for column, definition in (("rating", "REAL"), ("note", "TEXT NOT NULL DEFAULT ''"), ("rewatch", "INTEGER NOT NULL DEFAULT 0")):
+            try:
+                self.query(f"ALTER TABLE watched_films ADD COLUMN {column} {definition}")
+            except Exception:
+                pass
 
     def insert_watched(self, item):
-        values = (item["date"], json.dumps(item.get("venue", {})), json.dumps(item.get("film", {})))
-        statement = "INSERT INTO watched_films (watched_date, venue, film) VALUES (?, ?, ?)"
+        values = (item["date"], json.dumps(item.get("venue", {})), item.get("rating"), item.get("note", ""), int(bool(item.get("rewatch"))), json.dumps(item.get("film", {})))
+        statement = "INSERT INTO watched_films (watched_date, venue, rating, note, rewatch, film) VALUES (?, ?, ?, ?, ?, ?)"
         if self.postgres:
             return self.query(statement + " RETURNING id", values, True)[0][0]
         cursor = self.connection.cursor()
@@ -62,8 +67,8 @@ class Database:
         return item_id
 
     def all_watched(self):
-        rows = self.query("SELECT id, watched_date, venue, film FROM watched_films ORDER BY watched_date DESC LIMIT 8", fetch=True)
-        return [{"id": row[0], "date": row[1], "venue": json.loads(row[2] or "{}"), "film": json.loads(row[3])} for row in rows]
+        rows = self.query("SELECT id, watched_date, venue, rating, note, rewatch, film FROM watched_films ORDER BY watched_date DESC LIMIT 8", fetch=True)
+        return [{"id": row[0], "date": row[1], "venue": json.loads(row[2] or "{}"), "rating": row[3], "note": row[4], "rewatch": bool(row[5]), "film": json.loads(row[6])} for row in rows]
         print("Database schema ready.", flush=True)
 
     def insert_post(self, post):

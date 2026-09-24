@@ -620,7 +620,11 @@ body::before {
 .watched-item strong, .watched-item span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .watched-item strong { color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: .95rem; font-weight: 400; }
 .watched-item span { margin-top: .2rem; color: var(--muted); font-size: .68rem; }
+.watched-item em { color: var(--accent); font-family: "Trebuchet MS", sans-serif; font-size: .58rem; font-style: normal; letter-spacing: .08em; text-transform: uppercase; }
+.watched-item p { max-width: 210px; margin: .25rem 0 0; overflow: hidden; color: var(--ink-soft); font-size: .76rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
 .watched-form { margin-top: 1.5rem; }
+.checkbox-field { display: flex; flex-direction: row; align-items: center; gap: .55rem; }
+.checkbox-field input { width: auto; }
 .site-footer { display: flex; justify-content: space-between; padding: 2rem 0; color: var(--muted); font-size: 0.75rem; }
 .owner-link { color: var(--muted); background: transparent; border: 0; cursor: pointer; font-size: 0.7rem; }
 .owner-link:hover { color: var(--accent); }
