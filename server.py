@@ -12,6 +12,8 @@ DEFAULT_DB = os.path.join(os.environ.get("LOCALAPPDATA", os.path.dirname(__file_
 class Database:
     def __init__(self):
         self.postgres = bool(os.environ.get("DATABASE_URL"))
+        if os.environ.get("RENDER") and not self.postgres:
+            raise RuntimeError("DATABASE_URL is required on Render; refusing to use ephemeral SQLite storage.")
         if self.postgres:
             try:
                 import psycopg
@@ -26,11 +28,16 @@ class Database:
         if self.postgres:
             statement = statement.replace("?", "%s")
         cursor = self.connection.cursor()
-        cursor.execute(statement, params)
-        rows = cursor.fetchall() if fetch else []
-        self.connection.commit()
-        cursor.close()
-        return rows
+        try:
+            cursor.execute(statement, params)
+            rows = cursor.fetchall() if fetch else []
+            self.connection.commit()
+            return rows
+        except Exception:
+            self.connection.rollback()
+            raise
+        finally:
+            cursor.close()
 
     def init_schema(self):
         identity = "SERIAL PRIMARY KEY" if self.postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
@@ -147,6 +154,7 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store, max-age=0")
         self.end_headers()
         self.wfile.write(body)
 
@@ -185,11 +193,16 @@ class Database:
         if self.postgres:
             statement = statement.replace("?", "%s")
         cursor = self.connection.cursor()
-        cursor.execute(statement, params)
-        rows = cursor.fetchall() if fetch else []
-        self.connection.commit()
-        cursor.close()
-        return rows
+        try:
+            cursor.execute(statement, params)
+            rows = cursor.fetchall() if fetch else []
+            self.connection.commit()
+            return rows
+        except Exception:
+            self.connection.rollback()
+            raise
+        finally:
+            cursor.close()
 
     def init_schema(self):
         identity = "SERIAL PRIMARY KEY" if self.postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"

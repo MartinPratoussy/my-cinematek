@@ -23,9 +23,11 @@ function sortPosts(posts) {
 }
 
 async function loadPosts() {
-  const response = await fetch("/api/posts");
+  const response = await fetch(`/api/posts?fresh=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Reviews could not be loaded.");
-  return response.json();
+  const text = await response.text();
+  if (!text.trim()) throw new Error("The review archive returned an empty response.");
+  return JSON.parse(text);
 }
 
 function renderFeatured(post) {
@@ -87,7 +89,7 @@ loadPosts().then((posts) => {
   renderArchive(ordered);
   renderTags(ordered);
   renderFeatured(ordered[0]);
-}).catch(() => {
-  postsList.innerHTML = '<p class="empty-state">The diary is temporarily unavailable.</p>';
+}).catch((error) => {
+  postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
   renderFeatured(null);
 });
