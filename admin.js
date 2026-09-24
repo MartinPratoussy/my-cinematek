@@ -43,7 +43,14 @@ let watchedFilmTimer;
 let filmSearchTimer;
 let venueSearchTimer;
 let editingWatchedId = null;
+let watchedAdminCurrentItems = [];
+let watchedAdminPage = 0;
+const WATCHED_ADMIN_PAGE_SIZE = 20;
 const watchedAdminList = document.getElementById("watched-admin-list");
+const watchedAdminSearch = document.getElementById("watched-admin-search");
+const watchedAdminPrev = document.getElementById("watched-admin-prev");
+const watchedAdminNext = document.getElementById("watched-admin-next");
+const watchedAdminPageLabel = document.getElementById("watched-admin-page-label");
 
 function renderPresetTags() {
   presetTags.innerHTML = TAG_PRESETS.map((tag) => `<button type="button" class="preset-tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("");
@@ -236,12 +243,17 @@ async function loadAdminPosts() {
   adminPostList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => editPost((await loadPosts()).find((post) => post.id === Number(button.dataset.id)))));
 }
 
-async function loadWatchedAdmin() {
-  const response = await fetch("/api/watched");
-  const items = await readJson(response);
-  watchedAdminList.innerHTML = items.length ? items.map((item) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(item.date)}${item.rewatch ? " · revu" : ""}</p><h3>${escapeHtml(item.film?.title || "Film sans titre")}</h3><p>${item.rating == null ? "Sans note" : `★ ${Number(item.rating).toFixed(1)}`} ${item.note ? `· ${escapeHtml(item.note)}` : ""}</p></div><button type="button" class="secondary-btn" data-watched-id="${item.id}">Modifier</button></article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>';
-  watchedAdminList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => {
-    const item = (await (await fetch("/api/watched")).json()).find((entry) => entry.id === Number(button.dataset.watchedId));
+function renderWatchedAdmin(items) {
+  const query = watchedAdminSearch.value.trim().toLowerCase();
+  const filteredItems = !query ? items : items.filter((item) => {
+    const haystack = [item.film?.title, item.date, item.note, item.rating, item.venue?.name].filter(Boolean).join(" ").toLowerCase();
+    return haystack.includes(query);
+  });
+
+  watchedAdminList.innerHTML = filteredItems.length ? filteredItems.map((item) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(item.date)}${item.rewatch ? " · revu" : ""}</p><h3>${escapeHtml(item.film?.title || "Film sans titre")}</h3><p>${item.rating == null ? "Sans note" : `★ ${Number(item.rating).toFixed(1)}`} ${item.note ? `· ${escapeHtml(item.note)}` : ""}</p></div><button type="button" class="secondary-btn" data-watched-id="${item.id}">Modifier</button></article>`).join("") : '<p class="empty-state">Aucun visionnage trouvé dans cette page.</p>';
+
+  watchedAdminList.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => {
+    const item = watchedAdminCurrentItems.find((entry) => entry.id === Number(button.dataset.watchedId));
     if (!item) return;
     editingWatchedId = item.id;
     watchedFilmData.value = JSON.stringify(item.film);
@@ -258,6 +270,18 @@ async function loadWatchedAdmin() {
     watchedForm.querySelector("button[type='submit']").textContent = "Enregistrer le visionnage";
     window.scrollTo({ top: watchedForm.offsetTop - 20, behavior: "smooth" });
   }));
+}
+
+async function loadWatchedAdmin(page = 0) {
+  watchedAdminPage = page;
+  const offset = page * WATCHED_ADMIN_PAGE_SIZE;
+  const response = await fetch(`/api/watched?limit=${WATCHED_ADMIN_PAGE_SIZE}&offset=${offset}`);
+  const items = await readJson(response);
+  watchedAdminCurrentItems = items;
+  watchedAdminPageLabel.textContent = `Page ${page + 1}`;
+  watchedAdminPrev.disabled = page === 0;
+  watchedAdminNext.disabled = items.length < WATCHED_ADMIN_PAGE_SIZE;
+  renderWatchedAdmin(items);
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -307,6 +331,13 @@ form.addEventListener("submit", async (event) => {
 });
 
 venueType.addEventListener("change", updateVenueFields);
+watchedAdminSearch.addEventListener("input", () => renderWatchedAdmin(watchedAdminCurrentItems));
+watchedAdminPrev.addEventListener("click", () => {
+  if (watchedAdminPage > 0) loadWatchedAdmin(watchedAdminPage - 1);
+});
+watchedAdminNext.addEventListener("click", () => {
+  if (watchedAdminCurrentItems.length === WATCHED_ADMIN_PAGE_SIZE) loadWatchedAdmin(watchedAdminPage + 1);
+});
 watchedFilmSearch.addEventListener("input", () => { clearTimeout(watchedFilmTimer); watchedFilmTimer = setTimeout(searchWatchedFilms, 300); });
 watchedVenueType.addEventListener("change", () => {
   const home = watchedVenueType.value === "home";
