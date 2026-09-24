@@ -66,8 +66,8 @@ class Database:
         cursor.close()
         return item_id
 
-    def all_watched(self):
-        rows = self.query("SELECT id, watched_date, venue, rating, note, rewatch, film FROM watched_films ORDER BY watched_date DESC LIMIT 8", fetch=True)
+    def all_watched(self, limit=8, offset=0):
+        rows = self.query("SELECT id, watched_date, venue, rating, note, rewatch, film FROM watched_films ORDER BY watched_date DESC LIMIT ? OFFSET ?", (limit, offset), fetch=True)
         return [{"id": row[0], "date": row[1], "venue": json.loads(row[2] or "{}"), "rating": row[3], "note": row[4], "rewatch": bool(row[5]), "film": json.loads(row[6])} for row in rows]
 
     def update_watched(self, item_id, item):
@@ -117,7 +117,11 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             limit = min(max(int(parse_qs(parsed.query).get("limit", [8])[0]), 1), 50)
             offset = max(int(parse_qs(parsed.query).get("offset", [0])[0]), 0)
             return self.send_json(db.all_posts(limit, offset))
-        if parsed.path == "/api/watched": return self.send_json(db.all_watched())
+        if parsed.path == "/api/watched":
+            params = parse_qs(parsed.query)
+            limit = min(max(int(params.get("limit", [8])[0]), 1), 50)
+            offset = max(int(params.get("offset", [0])[0]), 0)
+            return self.send_json(db.all_watched(limit, offset))
         if parsed.path == "/api/search": return self.search_tmdb(query)
         if parsed.path == "/api/movie": return self.movie_details(parse_qs(parsed.query).get("id", [""])[0].strip())
         if parsed.path == "/api/places": return self.search_places(query)

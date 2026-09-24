@@ -5,6 +5,12 @@ const modal = document.getElementById("critic-modal");
 const modalContent = document.getElementById("modal-content");
 const filmModal = document.getElementById("film-modal");
 const filmModalContent = document.getElementById("film-modal-content");
+const watchedSentinel = document.getElementById("watched-sentinel");
+
+let watchedItems = [];
+let watchedOffset = 0;
+let watchedLoading = false;
+let hasMoreWatched = true;
 
 function escapeHtml(value = "") {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
@@ -35,8 +41,8 @@ async function loadPosts(offset = 0) {
   if (!text.trim()) throw new Error("L’archive des critiques a renvoyé une réponse vide.");
   return JSON.parse(text);
 }
-async function loadWatched() {
-  const response = await fetch(`/api/watched?fresh=${Date.now()}`, { cache: "no-store" });
+async function loadWatched(offset = 0, limit = 8) {
+  const response = await fetch(`/api/watched?limit=${limit}&offset=${offset}&fresh=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Les visionnages récents n’ont pas pu être chargés.");
   const items = await response.json();
   return Promise.all(items.map(async (item) => {
@@ -74,7 +80,8 @@ function closeFilmModal() { filmModal.hidden = true; if (modal.hidden) document.
 
 function viewingContextMarkup(post) {
   const place = venueButton(post.venue) || escapeHtml(post.context || "Chez soi");
-  return `<aside class="viewing-context"><p class="eyebrow">séance</p><div class="viewing-context-line"><span>${escapeHtml(formatDate(post.date))}</span><span>${place}</span></div></aside>`;
+  const context = post.context ? `<span class="viewing-context-note"><strong>contexte</strong> ${escapeHtml(post.context)}</span>` : "";
+  return `<aside class="viewing-context"><p class="eyebrow">séance</p><div class="viewing-context-line"><span>${escapeHtml(formatDate(post.date))}</span><span>${place}</span>${context}</div></aside>`;
 }
 
 function criticMarkup(post) {
@@ -92,15 +99,48 @@ function renderDiary(posts, append = false) {
   if (append) postsList.insertAdjacentHTML("beforeend", markup); else postsList.innerHTML = markup;
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
 }
-function renderWatched(items) {
-  watchedList.innerHTML = items.length ? items.map((item, index) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(item.film?.title || "Film sans titre")}${item.rewatch ? ' <em>revu</em>' : ""}</strong><span>${escapeHtml(formatDate(item.date))} · ${venueButton(item.venue) || "visionnage"}${item.rating !== null && item.rating !== undefined ? ` · ★ ${Number(item.rating).toFixed(1)}` : ""}</span>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${item.film?.poster ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(item.film.poster)}" alt="" /></button>` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>';
-  watchedList.querySelectorAll(".recent-watch-poster-button").forEach((button) => button.addEventListener("click", () => openFilmModal(items[Number(button.dataset.watchedIndex)].film)));
+function renderWatched(items, append = false) {
+  const mergedItems = append ? [...watchedItems, ...items] : items;
+  watchedItems = mergedItems;
+  watchedList.innerHTML = mergedItems.length ? mergedItems.map((item, index) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(item.film?.title || "Film sans titre")}${item.rewatch ? ' <em>revu</em>' : ""}</strong><span>${escapeHtml(formatDate(item.date))} · ${venueButton(item.venue) || "visionnage"}${item.rating !== null && item.rating !== undefined ? ` · ★ ${Number(item.rating).toFixed(1)}` : ""}</span>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${item.film?.poster ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(item.film.poster)}" alt="" /></button>` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>';
+  watchedList.querySelectorAll(".recent-watch-poster-button").forEach((button) => button.addEventListener("click", () => openFilmModal(mergedItems[Number(button.dataset.watchedIndex)].film)));
+  if (watchedSentinel) watchedSentinel.hidden = !hasMoreWatched;
+}
+
+async function loadMoreWatched() {
+  if (watchedLoading || !hasMoreWatched) return;
+  watchedLoading = true;
+  try {
+    const items = await loadWatched(watchedOffset, 8);
+    if (!items.length) {
+      hasMoreWatched = false;
+      if (watchedSentinel) watchedSentinel.hidden = true;
+      return;
+    }
+    watchedOffset += items.length;
+    renderWatched(items, true);
+    hasMoreWatched = items.length === 8;
+  } finally {
+    watchedLoading = false;
+    if (watchedSentinel) watchedSentinel.hidden = !hasMoreWatched;
+  }
 }
 document.querySelectorAll("[data-close-modal]").forEach((element) => element.addEventListener("click", closeModal));
 document.querySelectorAll("[data-close-film-modal]").forEach((element) => element.addEventListener("click", closeFilmModal));
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
 let postOffset = 0;
-loadPosts().then((posts) => { postOffset = posts.length; renderDiary(posts); loadMorePosts.hidden = posts.length < 8; return loadWatched(); }).then(renderWatched).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
+loadPosts().then((posts) => { postOffset = posts.length; renderDiary(posts); loadMorePosts.hidden = posts.length < 8; return loadWatched(0, 8); }).then((items) => {
+  watchedOffset = items.length;
+  renderWatched(items);
+  hasMoreWatched = items.length === 8;
+  if (watchedSentinel) watchedSentinel.hidden = !hasMoreWatched;
+  if (watchedSentinel && typeof IntersectionObserver !== "undefined") {
+    const sentinelObserver = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMoreWatched();
+    }, { root: null, threshold: 0.2 });
+    sentinelObserver.observe(watchedSentinel);
+  }
+}).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
 loadMorePosts.addEventListener("click", async () => {
   if (loadMorePosts.disabled) return;
   loadMorePosts.disabled = true;

@@ -1,75 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>my-cinematek</title>
-    <meta
-      name="description"
-      content="Un journal personnel de films vus au cinéma ou chez soi."
-    />
+    <meta name="description" content="Un journal personnel de films vus au cinéma ou chez soi." />
     <link rel="stylesheet" href="styles.css?v=20260924-15" />
-  </head>
-  <body>
+</head>
+
+<body>
     <header class="site-header">
-      <div class="container nav-wrap">
-        <a href="#top" class="brand">my-cinematek</a>
-        <nav class="main-nav" aria-label="Main navigation">
-          <a href="#diary">Journal</a>
-          <a href="#about">À propos</a>
-        </nav>
-      </div>
+        <div class="container nav-wrap">
+            <a href="#top" class="brand">my-cinematek</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="#diary">Journal</a>
+                <a href="#about">À propos</a>
+            </nav>
+        </div>
     </header>
 
     <main id="top" class="container site-main">
-      <section class="hero">
-        <p class="eyebrow">films / critiques / séances</p>
-        <h1>my-cinematek</h1>
-        <p class="lede">Un journal personnel des films que j'ai vus et de ce que j'en ai pensé.</p>
-      </section>
-
-      <div class="diary-layout">
-        <section id="diary" class="diary-section">
-          <div class="section-head">
-            <p class="eyebrow">mon journal</p>
-            <h2>Critiques</h2>
-          </div>
-          <div id="posts-list" class="post-list" aria-live="polite"></div>
-          <button id="load-more-posts" class="secondary-btn load-more" type="button" hidden>Charger plus de critiques</button>
+        <section class="hero">
+            <p class="eyebrow">films / critiques / séances</p>
+            <h1>my-cinematek</h1>
+            <p class="lede">Un journal personnel des films que j'ai vus et de ce que j'en ai pensé.</p>
         </section>
 
-        <aside id="watched-shelf" class="watched-shelf" aria-labelledby="watched-title">
-          <div class="section-head"><p class="eyebrow">vus récemment</p><h2 id="watched-title">Sans critique</h2></div>
-          <div id="watched-list" class="watched-list"></div>
-        </aside>
-      </div>
+        <div class="diary-layout">
+            <section id="diary" class="diary-section">
+                <div class="section-head">
+                    <p class="eyebrow">mon journal</p>
+                    <h2>Critiques</h2>
+                </div>
+                <div id="posts-list" class="post-list" aria-live="polite"></div>
+                <button id="load-more-posts" class="secondary-btn load-more" type="button" hidden>Charger plus de
+                    critiques</button>
+            </section>
 
-      <section id="about" class="about-note">
-        <p class="eyebrow">à propos</p>
-        <p>Films vus, critiques écrites et séances conservées au même endroit.</p>
-      </section>
+            <aside id="watched-shelf" class="watched-shelf" aria-labelledby="watched-title">
+                <div class="section-head">
+                    <p class="eyebrow">vus récemment</p>
+                    <h2 id="watched-title">Sans critique</h2>
+                </div>
+                <div id="watched-list" class="watched-list"></div>
+                <div id="watched-sentinel" class="watched-sentinel" aria-hidden="true" hidden></div>
+            </aside>
+        </div>
+
+        <section id="about" class="about-note">
+            <p class="eyebrow">à propos</p>
+            <p>Films vus, critiques écrites et séances conservées au même endroit.</p>
+        </section>
     </main>
 
     <footer class="site-footer container">
-      <span>my-cinematek</span>
+        <span>my-cinematek</span>
     </footer>
 
     <div id="critic-modal" class="critic-modal" hidden>
-      <div class="critic-modal-backdrop" data-close-modal></div>
-      <article class="critic-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <button class="modal-close" type="button" aria-label="Fermer la critique" data-close-modal>&times;</button>
-        <div id="modal-content"></div>
-      </article>
+        <div class="critic-modal-backdrop" data-close-modal></div>
+        <article class="critic-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <button class="modal-close" type="button" aria-label="Fermer la critique" data-close-modal>&times;</button>
+            <div id="modal-content"></div>
+        </article>
     </div>
 
     <div id="film-modal" class="critic-modal" hidden>
-      <div class="critic-modal-backdrop" data-close-film-modal></div>
-      <article class="critic-modal-dialog film-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="film-modal-title">
-        <button class="modal-close" type="button" aria-label="Fermer les détails du film" data-close-film-modal>&times;</button>
-        <div id="film-modal-content"></div>
-      </article>
+        <div class="critic-modal-backdrop" data-close-film-modal></div>
+        <article class="critic-modal-dialog film-modal-dialog" role="dialog" aria-modal="true"
+            aria-labelledby="film-modal-title">
+            <button class="modal-close" type="button" aria-label="Fermer les détails du film"
+                data-close-film-modal>&times;</button>
+            <div id="film-modal-content"></div>
+        </article>
     </div>
 
     <script src="public.js?v=20260924-20"></script>
-  </body>
+</body>
+
 </html>
