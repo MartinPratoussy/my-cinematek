@@ -69,6 +69,10 @@ class Database:
     def all_watched(self):
         rows = self.query("SELECT id, watched_date, venue, rating, note, rewatch, film FROM watched_films ORDER BY watched_date DESC LIMIT 8", fetch=True)
         return [{"id": row[0], "date": row[1], "venue": json.loads(row[2] or "{}"), "rating": row[3], "note": row[4], "rewatch": bool(row[5]), "film": json.loads(row[6])} for row in rows]
+
+    def update_watched(self, item_id, item):
+        values = (item["date"], json.dumps(item.get("venue", {})), item.get("rating"), item.get("note", ""), int(bool(item.get("rewatch"))), json.dumps(item.get("film", {})), item_id)
+        self.query("UPDATE watched_films SET watched_date = ?, venue = ?, rating = ?, note = ?, rewatch = ?, film = ? WHERE id = ?", values)
         print("Database schema ready.", flush=True)
 
     def insert_post(self, post):
@@ -86,8 +90,13 @@ class Database:
     def serialize(self, row):
         return {"id": row[0], "title": row[1], "movieTitle": row[2], "date": row[3], "rating": row[4], "context": row[5], "venue": json.loads(row[6] or "{}"), "tags": json.loads(row[7]), "body": row[8], "conclusion": row[9], "film": json.loads(row[10])}
 
-    def all_posts(self):
-        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film FROM posts ORDER BY watched_date DESC", fetch=True)
+    def all_posts(self, limit=None, offset=0):
+        statement = "SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film FROM posts ORDER BY watched_date DESC"
+        params = ()
+        if limit is not None:
+            statement += " LIMIT ? OFFSET ?"
+            params = (limit, offset)
+        rows = self.query(statement, params, fetch=True)
         return [self.serialize(row) for row in rows]
 
     def get_post(self, post_id):
@@ -104,7 +113,10 @@ class CinematekHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query).get("query", [""])[0].strip()
-        if parsed.path == "/api/posts": return self.send_json(db.all_posts())
+        if parsed.path == "/api/posts":
+            limit = min(max(int(parse_qs(parsed.query).get("limit", [8])[0]), 1), 50)
+            offset = max(int(parse_qs(parsed.query).get("offset", [0])[0]), 0)
+            return self.send_json(db.all_posts(limit, offset))
         if parsed.path == "/api/watched": return self.send_json(db.all_watched())
         if parsed.path == "/api/search": return self.search_tmdb(query)
         if parsed.path == "/api/movie": return self.movie_details(parse_qs(parsed.query).get("id", [""])[0].strip())
@@ -126,10 +138,17 @@ class CinematekHandler(SimpleHTTPRequestHandler):
 
     def do_PUT(self):
         path = urlparse(self.path).path
-        if not path.startswith("/api/posts/"): return self.send_json({"error": "Not found."}, 404)
+        if path.startswith("/api/watched/"):
+            if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
+            item_id = int(path.rsplit("/", 1)[-1])
+            db.update_watched(item_id, self.read_json())
+            return self.send_json({"id": item_id})
+        if not path.startswith("/api/posts/"):
+            return self.send_json({"error": "Not found."}, 404)
         if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
-        db.update_post(int(path.rsplit("/", 1)[-1]), self.read_json())
-        return self.send_json(db.get_post(int(path.rsplit("/", 1)[-1])))
+        post_id = int(path.rsplit("/", 1)[-1])
+        db.update_post(post_id, self.read_json())
+        return self.send_json(db.get_post(post_id))
 
     def authorized(self): return self.headers.get("X-Author-Password") == os.environ.get("AUTHOR_PASSWORD", "cinematek")
     def read_json(self): return json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8"))

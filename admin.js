@@ -40,6 +40,8 @@ let selectedFilmData = null;
 let watchedFilmTimer;
 let filmSearchTimer;
 let venueSearchTimer;
+let editingWatchedId = null;
+const watchedAdminList = document.getElementById("watched-admin-list");
 
 function renderPresetTags() {
   presetTags.innerHTML = TAG_PRESETS.map((tag) => `<button type="button" class="preset-tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("");
@@ -99,6 +101,7 @@ function showEditor() {
   editor.classList.remove("hidden");
   editorStatus.textContent = "Editor unlocked.";
   loadAdminPosts();
+  loadWatchedAdmin();
 }
 
 function resetForm() {
@@ -212,6 +215,29 @@ async function loadAdminPosts() {
   adminPostList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => editPost((await loadPosts()).find((post) => post.id === Number(button.dataset.id)))));
 }
 
+async function loadWatchedAdmin() {
+  const response = await fetch("/api/watched");
+  const items = await readJson(response);
+  watchedAdminList.innerHTML = items.length ? items.map((item) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(item.date)}${item.rewatch ? " · rewatch" : ""}</p><h3>${escapeHtml(item.film?.title || "Untitled film")}</h3><p>${item.rating == null ? "No rating" : `★ ${Number(item.rating).toFixed(1)}`} ${item.note ? `· ${escapeHtml(item.note)}` : ""}</p></div><button type="button" class="secondary-btn" data-watched-id="${item.id}">Edit</button></article>`).join("") : '<p class="empty-state">No unwritten screenings yet.</p>';
+  watchedAdminList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => {
+    const item = (await (await fetch("/api/watched")).json()).find((entry) => entry.id === Number(button.dataset.watchedId));
+    if (!item) return;
+    editingWatchedId = item.id;
+    watchedFilmData.value = JSON.stringify(item.film);
+    watchedFilmSearch.value = item.film?.title || "";
+    watchedDate.value = item.date;
+    watchedRating.value = item.rating ?? "";
+    watchedRewatch.checked = item.rewatch;
+    watchedNote.value = item.note || "";
+    watchedVenueType.value = item.venue?.type || "cinema";
+    watchedVenueName.value = item.venue?.name || "";
+    watchedVenueField.classList.toggle("hidden", watchedVenueType.value === "home");
+    watchedStatus.textContent = "Editing this watch.";
+    watchedForm.querySelector("button[type='submit']").textContent = "Save watch";
+    window.scrollTo({ top: watchedForm.offsetTop - 20, behavior: "smooth" });
+  }));
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = loginPassword.value.trim();
@@ -260,9 +286,10 @@ watchedForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const film = watchedFilmData.value ? JSON.parse(watchedFilmData.value) : null;
   if (!film?.id || !watchedDate.value) { watchedStatus.textContent = "Choose a film and date first."; return; }
-  const response = await fetch("/api/watched", { method: "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify({ date: watchedDate.value, rating: watchedRating.value ? Number(watchedRating.value) : null, note: watchedNote.value.trim(), rewatch: watchedRewatch.checked, film: { id: film.id, title: film.title, year: (film.release_date || "").slice(0, 4), poster: posterUrl(film.poster_path) }, venue: { type: watchedVenueType.value, name: watchedVenueType.value === "home" ? "My TV" : watchedVenueName.value.trim(), location: "" } }) });
+  const watchedPayload = { date: watchedDate.value, rating: watchedRating.value ? Number(watchedRating.value) : null, note: watchedNote.value.trim(), rewatch: watchedRewatch.checked, film: { id: film.id, title: film.title, year: (film.release_date || "").slice(0, 4), poster: posterUrl(film.poster_path) }, venue: { type: watchedVenueType.value, name: watchedVenueType.value === "home" ? "My TV" : watchedVenueName.value.trim(), location: "" } };
+  const response = await fetch(editingWatchedId ? `/api/watched/${editingWatchedId}` : "/api/watched", { method: editingWatchedId ? "PUT" : "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify(watchedPayload) });
   if (!response.ok) { watchedStatus.textContent = "The watch could not be saved."; return; }
-  watchedForm.reset(); watchedFilmData.value = ""; watchedStatus.textContent = "Added to recent watches.";
+  watchedForm.reset(); watchedFilmData.value = ""; editingWatchedId = null; watchedForm.querySelector("button[type='submit']").textContent = "Add to recent watches"; watchedStatus.textContent = "Watch saved."; loadWatchedAdmin();
 });
 renderPresetTags();
 updateVenueFields();

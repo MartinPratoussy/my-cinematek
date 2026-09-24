@@ -1,4 +1,5 @@
 const postsList = document.getElementById("posts-list");
+const loadMorePosts = document.getElementById("load-more-posts");
 const watchedList = document.getElementById("watched-list");
 const modal = document.getElementById("critic-modal");
 const modalContent = document.getElementById("modal-content");
@@ -13,8 +14,8 @@ function venueLabel(venue) {
   return venue.location && /^https?:\/\//i.test(venue.location) ? `<a href="${escapeHtml(venue.location)}" target="_blank" rel="noreferrer">${label}</a>` : label;
 }
 function sortPosts(posts) { return [...posts].sort((a, b) => new Date(b.date) - new Date(a.date)); }
-async function loadPosts() {
-  const response = await fetch(`/api/posts?fresh=${Date.now()}`, { cache: "no-store" });
+async function loadPosts(offset = 0) {
+  const response = await fetch(`/api/posts?limit=8&offset=${offset}&fresh=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Reviews could not be loaded.");
   const text = await response.text();
   if (!text.trim()) throw new Error("The review archive returned an empty response.");
@@ -34,9 +35,10 @@ function criticMarkup(post) {
 }
 function openModal(post) { modalContent.innerHTML = criticMarkup(post); modal.hidden = false; document.body.classList.add("modal-open"); modal.querySelector(".modal-close").focus(); }
 function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
-function renderDiary(posts) {
+function renderDiary(posts, append = false) {
   if (!posts.length) { postsList.innerHTML = '<p class="empty-state">The diary is empty.</p>'; return; }
-  postsList.innerHTML = posts.map((post, index) => `<button class="diary-row ${index === 0 ? "diary-row-latest" : ""}" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(post.date)}${index === 0 ? "<small>latest</small>" : ""}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueLabel(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
+  const markup = posts.map((post, index) => `<button class="diary-row ${!append && index === 0 ? "diary-row-latest" : ""}" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(post.date)}${!append && index === 0 ? "<small>latest</small>" : ""}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueLabel(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
+  if (append) postsList.insertAdjacentHTML("beforeend", markup); else postsList.innerHTML = markup;
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
 }
 function renderWatched(items) {
@@ -44,4 +46,6 @@ function renderWatched(items) {
 }
 document.querySelectorAll("[data-close-modal]").forEach((element) => element.addEventListener("click", closeModal));
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
-Promise.all([loadPosts(), loadWatched()]).then(([posts, watched]) => { renderDiary(sortPosts(posts)); renderWatched(watched); }).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
+let postOffset = 0;
+loadPosts().then((posts) => { postOffset = posts.length; renderDiary(posts); loadMorePosts.hidden = posts.length < 8; return loadWatched(); }).then(renderWatched).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
+loadMorePosts.addEventListener("click", async () => { const posts = await loadPosts(postOffset); postOffset += posts.length; renderDiary(posts, true); loadMorePosts.hidden = posts.length < 8; });

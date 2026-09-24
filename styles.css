@@ -822,6 +822,7 @@ body.modal-open { overflow: hidden; }
 .diary-venue { display: block; margin-top: .6rem; color: var(--muted); font-size: .72rem; }
 .diary-arrow { color: var(--accent); font-size: 1.4rem; transition: transform .2s ease; }
 .diary-row:hover .diary-arrow { transform: translateX(4px); }
+.load-more { display: block; margin: 1rem auto 0; }
 .critic-modal[hidden] { display: none; }
 .critic-modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 1rem; }
 .critic-modal-backdrop { position: absolute; inset: 0; background: rgba(5, 6, 7, .78); backdrop-filter: blur(7px); animation: modal-fade .2s ease both; }
