@@ -1,0 +1,326 @@
+import json
+import os
+import sqlite3
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from urllib.error import HTTPError, URLError
+from urllib.parse import parse_qs, urlparse
+from urllib.request import Request, urlopen
+
+TMDB_API_URL = "https://api.themoviedb.org/3/search/movie"
+DEFAULT_DB = os.path.join(os.environ.get("LOCALAPPDATA", os.path.dirname(__file__)), "my-cinematek.db")
+
+DEFAULT_POSTS = [
+    {"title": "A strange, luminous dream", "movieTitle": "The Green Knight", "date": "2026-09-04", "rating": 8.5, "context": "midnight screening", "tags": ["fantasy", "dreamlike", "theater"], "body": "The Green Knight feels like a myth arriving in slow motion.", "film": {"title": "The Green Knight", "year": "2021"}},
+    {"title": "A quiet kind of magic", "movieTitle": "Past Lives", "date": "2026-08-17", "rating": 9, "context": "sofa watch", "tags": ["drama", "quiet", "relationship"], "body": "Past Lives is a film that understands how silence can carry as much emotional weight as any big speech.", "film": {"title": "Past Lives", "year": "2023"}},
+    {"title": "A candy-colored rush", "movieTitle": "Spider-Man: Across the Spider-Verse", "date": "2026-07-21", "rating": 9.5, "context": "theater", "tags": ["animation", "comic", "energy"], "body": "This movie absolutely detonates with energy.", "film": {"title": "Spider-Man: Across the Spider-Verse", "year": "2023"}},
+]
+
+
+class Database:
+    def __init__(self):
+        self.postgres = bool(os.environ.get("DATABASE_URL"))
+        if self.postgres:
+            try:
+                import psycopg
+                self.connection = psycopg.connect(os.environ["DATABASE_URL"])
+            except ImportError as error:
+                raise RuntimeError("DATABASE_URL is set but psycopg is not installed.") from error
+        else:
+            self.connection = sqlite3.connect(os.environ.get("SQLITE_PATH", DEFAULT_DB), check_same_thread=False)
+        self.init_schema()
+
+    def query(self, statement, params=(), fetch=False):
+        if self.postgres:
+            statement = statement.replace("?", "%s")
+        cursor = self.connection.cursor()
+        cursor.execute(statement, params)
+        rows = cursor.fetchall() if fetch else []
+        self.connection.commit()
+        cursor.close()
+        return rows
+
+    def init_schema(self):
+        identity = "SERIAL PRIMARY KEY" if self.postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        self.query(f"CREATE TABLE IF NOT EXISTS posts (id {identity}, title TEXT NOT NULL, movie_title TEXT NOT NULL, watched_date TEXT NOT NULL, rating REAL NOT NULL, context TEXT, tags TEXT NOT NULL, body TEXT NOT NULL, film TEXT NOT NULL)")
+        if not self.query("SELECT id FROM posts LIMIT 1", fetch=True):
+            for post in DEFAULT_POSTS:
+                self.insert_post(post)
+
+    def insert_post(self, post):
+        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("tags", [])), post["body"], json.dumps(post.get("film", {})))
+        if self.postgres:
+            return self.query("INSERT INTO posts (title, movie_title, watched_date, rating, context, tags, body, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id", values, True)[0][0]
+        cursor = self.connection.cursor()
+        cursor.execute("INSERT INTO posts (title, movie_title, watched_date, rating, context, tags, body, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", values)
+        post_id = cursor.lastrowid
+        self.connection.commit()
+        cursor.close()
+        return post_id
+
+    @staticmethod
+    def serialize(row):
+        return {"id": row[0], "title": row[1], "movieTitle": row[2], "date": row[3], "rating": row[4], "context": row[5], "tags": json.loads(row[6]), "body": row[7], "film": json.loads(row[8])}
+
+    def all_posts(self):
+        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, tags, body, film FROM posts ORDER BY watched_date DESC", fetch=True)
+        return [self.serialize(row) for row in rows]
+
+    def get_post(self, post_id):
+        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, tags, body, film FROM posts WHERE id = ?", (post_id,), True)
+        return self.serialize(rows[0]) if rows else None
+
+    def update_post(self, post_id, post):
+        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("tags", [])), post["body"], json.dumps(post.get("film", {})), post_id)
+        self.query("UPDATE posts SET title = ?, movie_title = ?, watched_date = ?, rating = ?, context = ?, tags = ?, body = ?, film = ? WHERE id = ?", values)
+
+
+db = Database()
+
+
+class CinematekHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/posts":
+            return self.send_json(db.all_posts())
+        if parsed.path == "/api/search":
+            return self.search_tmdb(parse_qs(parsed.query).get("query", [""])[0].strip())
+        return super().do_GET()
+
+    def do_POST(self):
+        if urlparse(self.path).path == "/api/auth":
+            return self.send_json({"authenticated": self.authorized()}, 200 if self.authorized() else 401)
+        if urlparse(self.path).path != "/api/posts":
+            return self.send_json({"error": "Not found."}, 404)
+        if not self.authorized():
+            return self.send_json({"error": "Author access required."}, 401)
+        post_id = db.insert_post(self.read_json())
+        return self.send_json(db.get_post(post_id), 201)
+
+    def do_PUT(self):
+        parsed = urlparse(self.path)
+        if not parsed.path.startswith("/api/posts/"):
+            return self.send_json({"error": "Not found."}, 404)
+        if not self.authorized():
+            return self.send_json({"error": "Author access required."}, 401)
+        post_id = int(parsed.path.rsplit("/", 1)[-1])
+        db.update_post(post_id, self.read_json())
+        return self.send_json(db.get_post(post_id))
+
+    def authorized(self):
+        return self.headers.get("X-Author-Password") == os.environ.get("AUTHOR_PASSWORD", "cinematek")
+
+    def read_json(self):
+        length = int(self.headers.get("Content-Length", 0))
+        return json.loads(self.rfile.read(length).decode("utf-8"))
+
+    def search_tmdb(self, query):
+        api_key = os.environ.get("TMDB_API_KEY")
+        if not api_key:
+            return self.send_json({"error": "Add TMDB_API_KEY before searching films."}, 503)
+        if not query:
+            return self.send_json({"results": []})
+        request = Request(f"{TMDB_API_URL}?api_key={api_key}&language=en-US&include_adult=false&query={query}", headers={"Accept": "application/json"})
+        try:
+            with urlopen(request, timeout=10) as response:
+                return self.send_json({"results": json.loads(response.read().decode("utf-8")).get("results", [])})
+        except HTTPError as error:
+            message = "TMDB rejected the API key. Check that the key is active and copied correctly." if error.code in (401, 403) else f"TMDB returned HTTP {error.code}."
+            return self.send_json({"error": message}, 502)
+        except URLError:
+            return self.send_json({"error": "TMDB could not be reached from this server."}, 502)
+        except (TimeoutError, json.JSONDecodeError):
+            return self.send_json({"error": "TMDB returned an invalid or delayed response."}, 502)
+
+    def send_json(self, payload, status=200):
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "8000"))
+    ThreadingHTTPServer(("", port), CinematekHandler).serve_forever()
+import json
+import os
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlparse
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+TMDB_API_URL = "https://api.themoviedb.org/3/search/movie"
+
+DEFAULT_DB = os.path.join(os.path.dirname(__file__), "cinematek.db")
+
+DEFAULT_POSTS = [
+    {
+        "id": 1,
+        "title": "A strange, luminous dream",
+        "movieTitle": "The Green Knight",
+        "date": "2026-09-04",
+        "rating": 8.5,
+        "context": "midnight screening",
+        "tags": ["fantasy", "dreamlike", "theater"],
+        "body": "The Green Knight feels like a myth arriving in slow motion. I went in expecting a familiar fantasy story and instead got something more elemental: a hallucinatory, patient film about time, temptation, and the cost of courage.",
+        "film": {"title": "The Green Knight", "year": "2021"},
+    },
+    {
+        "id": 2,
+        "title": "A quiet kind of magic",
+        "movieTitle": "Past Lives",
+        "date": "2026-08-17",
+        "rating": 9,
+        "context": "sofa watch",
+        "tags": ["drama", "quiet", "relationship"],
+        "body": "Past Lives is a film that understands how silence can carry as much emotional weight as any big speech. It is gentle without being empty, and it trusts the viewer to feel the ache of missed timing and long-buried connection.",
+        "film": {"title": "Past Lives", "year": "2023"},
+    },
+    {
+        "id": 3,
+        "title": "A candy-colored rush",
+        "movieTitle": "Spider-Man: Across the Spider-Verse",
+        "date": "2026-07-21",
+        "rating": 9.5,
+        "context": "theater",
+        "tags": ["animation", "comic", "energy"],
+        "body": "This movie absolutely detonates with energy. It moves with such confidence that even its most chaotic sequences feel purposeful. The visual language is thrilling, and the frames are full of ideas, motion, and personality.",
+        "film": {"title": "Spider-Man: Across the Spider-Verse", "year": "2023"},
+    },
+]
+
+class Database:
+    def __init__(self):
+        self.url = os.environ.get("DATABASE_URL")
+        self.connection = None
+        if self.url:
+            try:
+                import psycopg
+                self.connection = psycopg.connect(self.url)
+                self.postgres = True
+            except ImportError as error:
+                raise RuntimeError("DATABASE_URL is set but psycopg is not installed.") from error
+        else:
+            self.connection = sqlite3.connect(os.environ.get("SQLITE_PATH", DEFAULT_DB), check_same_thread=False)
+            self.postgres = False
+        self.init_schema()
+
+    def query(self, statement, params=(), fetch=False):
+        if self.postgres:
+            statement = statement.replace("?", "%s")
+        cursor = self.connection.cursor()
+        cursor.execute(statement, params)
+        rows = cursor.fetchall() if fetch else []
+        self.connection.commit()
+        cursor.close()
+        return rows
+
+    def init_schema(self):
+        identity = "SERIAL PRIMARY KEY" if self.postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
+        self.query(f"""
+            CREATE TABLE IF NOT EXISTS posts (
+                id {identity}, title TEXT NOT NULL, movie_title TEXT NOT NULL,
+                watched_date TEXT NOT NULL, rating REAL NOT NULL, context TEXT,
+                tags TEXT NOT NULL, body TEXT NOT NULL, film TEXT NOT NULL
+            )
+        """)
+        if not self.query("SELECT id FROM posts LIMIT 1", fetch=True):
+            for post in DEFAULT_POSTS:
+                self.insert_post(post)
+
+    def insert_post(self, post):
+        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("tags", [])), post["body"], json.dumps(post.get("film", {})))
+        if self.postgres:
+            rows = self.query("INSERT INTO posts (title, movie_title, watched_date, rating, context, tags, body, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id", values, True)
+            return rows[0][0]
+        cursor = self.connection.cursor()
+        cursor.execute("INSERT INTO posts (title, movie_title, watched_date, rating, context, tags, body, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", values)
+        post_id = cursor.lastrowid
+        self.connection.commit()
+        cursor.close()
+        return post_id
+
+    def serialize(self, row):
+        return {"id": row[0], "title": row[1], "movieTitle": row[2], "date": row[3], "rating": row[4], "context": row[5], "tags": json.loads(row[6]), "body": row[7], "film": json.loads(row[8])}
+
+    def all_posts(self):
+        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, tags, body, film FROM posts ORDER BY watched_date DESC", fetch=True)
+        return [self.serialize(row) for row in rows]
+
+    def get_post(self, post_id):
+        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, tags, body, film FROM posts WHERE id = ?", (post_id,), True)
+        return self.serialize(rows[0]) if rows else None
+
+    def update_post(self, post_id, post):
+        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("tags", [])), post["body"], json.dumps(post.get("film", {})), post_id)
+        self.query("UPDATE posts SET title = ?, movie_title = ?, watched_date = ?, rating = ?, context = ?, tags = ?, body = ?, film = ? WHERE id = ?", values)
+
+
+db = Database()
+
+
+class CinematekHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/posts":
+            return self.send_json(db.all_posts())
+        if parsed.path == "/api/search":
+            return self.search_tmdb(parse_qs(parsed.query).get("query", [""])[0].strip())
+        return super().do_GET()
+
+    def do_POST(self):
+        if urlparse(self.path).path != "/api/posts":
+            return self.send_json({"error": "Not found."}, 404)
+        if not self.authorized():
+            return self.send_json({"error": "Author access required."}, 401)
+        post_id = db.insert_post(self.read_json())
+        return self.send_json(db.get_post(post_id), 201)
+
+    def do_PUT(self):
+        parsed = urlparse(self.path)
+        if not parsed.path.startswith("/api/posts/"):
+            return self.send_json({"error": "Not found."}, 404)
+        if not self.authorized():
+            return self.send_json({"error": "Author access required."}, 401)
+        post_id = int(parsed.path.rsplit("/", 1)[-1])
+        db.update_post(post_id, self.read_json())
+        return self.send_json(db.get_post(post_id))
+
+    def authorized(self):
+        return self.headers.get("X-Author-Password") == os.environ.get("AUTHOR_PASSWORD", "cinematek")
+
+    def read_json(self):
+        length = int(self.headers.get("Content-Length", 0))
+        return json.loads(self.rfile.read(length).decode("utf-8"))
+
+    def search_tmdb(self, query):
+        api_key = os.environ.get("TMDB_API_KEY")
+        if not api_key:
+            return self.send_json({"error": "Add TMDB_API_KEY before searching films."}, 503)
+        if not query:
+            return self.send_json({"results": []})
+        request = Request(f"{TMDB_API_URL}?api_key={api_key}&language=en-US&include_adult=false&query={query}", headers={"Accept": "application/json"})
+        try:
+            with urlopen(request, timeout=10) as response:
+                return self.send_json({"results": json.loads(response.read().decode("utf-8")).get("results", [])})
+        except HTTPError as error:
+            message = "TMDB rejected the API key. Check that the key is active and copied correctly." if error.code in (401, 403) else f"TMDB returned HTTP {error.code}."
+            return self.send_json({"error": message}, 502)
+        except URLError:
+            return self.send_json({"error": "TMDB could not be reached from this server."}, 502)
+        except (TimeoutError, json.JSONDecodeError):
+            return self.send_json({"error": "TMDB returned an invalid or delayed response."}, 502)
+
+    def send_json(self, payload, status=200):
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "8000"))
+    ThreadingHTTPServer(("", port), CinematekHandler).serve_forever()
