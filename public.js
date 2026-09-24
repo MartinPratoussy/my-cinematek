@@ -47,7 +47,10 @@ function criticMarkup(post) {
 function openModal(post) { modalContent.innerHTML = criticMarkup(post); modal.hidden = false; document.body.classList.add("modal-open"); modal.querySelector(".modal-close").focus(); }
 function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
 function renderDiary(posts, append = false) {
-  if (!posts.length) { postsList.innerHTML = '<p class="empty-state">Le journal est vide.</p>'; return; }
+  if (!posts.length) {
+    if (!append) postsList.innerHTML = '<p class="empty-state">Le journal est vide.</p>';
+    return;
+  }
   const markup = posts.map((post, index) => `<button class="diary-row ${!append && index === 0 ? "diary-row-latest" : ""}" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(post.date)}${!append && index === 0 ? "<small>dernière</small>" : ""}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueLabel(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
   if (append) postsList.insertAdjacentHTML("beforeend", markup); else postsList.innerHTML = markup;
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
@@ -59,4 +62,23 @@ document.querySelectorAll("[data-close-modal]").forEach((element) => element.add
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
 let postOffset = 0;
 loadPosts().then((posts) => { postOffset = posts.length; renderDiary(posts); loadMorePosts.hidden = posts.length < 8; return loadWatched(); }).then(renderWatched).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
-loadMorePosts.addEventListener("click", async () => { const posts = await loadPosts(postOffset); postOffset += posts.length; renderDiary(posts, true); loadMorePosts.hidden = posts.length < 8; });
+loadMorePosts.addEventListener("click", async () => {
+  if (loadMorePosts.disabled) return;
+  loadMorePosts.disabled = true;
+  loadMorePosts.textContent = "Chargement…";
+  try {
+    const posts = await loadPosts(postOffset);
+    if (posts.length) {
+      postOffset += posts.length;
+      renderDiary(posts, true);
+    }
+    loadMorePosts.hidden = posts.length < 8;
+  } catch (error) {
+    loadMorePosts.textContent = "Réessayer";
+    loadMorePosts.title = error.message;
+    loadMorePosts.disabled = false;
+    return;
+  }
+  loadMorePosts.disabled = false;
+  loadMorePosts.textContent = "Charger plus de critiques";
+});
