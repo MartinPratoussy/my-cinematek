@@ -13,6 +13,15 @@ const selectedFilm = document.getElementById("selected-film");
 const filmData = document.getElementById("film-data");
 const cancelEdit = document.getElementById("cancel-edit");
 const adminPostList = document.getElementById("admin-post-list");
+const watchedForm = document.getElementById("watched-form");
+const watchedFilmSearch = document.getElementById("watched-film-search");
+const watchedFilmResults = document.getElementById("watched-film-results");
+const watchedFilmData = document.getElementById("watched-film-data");
+const watchedDate = document.getElementById("watched-date");
+const watchedVenueType = document.getElementById("watched-venue-type");
+const watchedVenueName = document.getElementById("watched-venue-name");
+const watchedVenueField = document.getElementById("watched-venue-name-field");
+const watchedStatus = document.getElementById("watched-status");
 const presetTags = document.getElementById("preset-tags");
 const venueType = document.getElementById("venue-type");
 const venueName = document.getElementById("venue-name");
@@ -25,6 +34,7 @@ const TAG_PRESETS = ["horror", "drama", "comedy", "thriller", "romance", "scienc
 let authorSecret = "";
 let editingPostId = null;
 let selectedFilmData = null;
+let watchedFilmTimer;
 let filmSearchTimer;
 let venueSearchTimer;
 
@@ -144,6 +154,18 @@ async function searchFilms() {
   }
 }
 
+async function searchWatchedFilms() {
+  const query = watchedFilmSearch.value.trim();
+  if (!query) return;
+  try {
+    const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+    const payload = await readJson(response);
+    if (!response.ok) throw new Error(payload.error || "Search unavailable.");
+    watchedFilmResults.innerHTML = payload.results.slice(0, 6).map((film) => `<button type="button" class="film-result" data-film='${escapeHtml(JSON.stringify(film))}'>${film.poster_path ? `<img src="${escapeHtml(posterUrl(film.poster_path))}" alt="" />` : ""}<span><strong>${escapeHtml(film.title)}</strong><small>${escapeHtml((film.release_date || "").slice(0, 4))}</small></span></button>`).join("");
+    watchedFilmResults.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { watchedFilmData.value = JSON.stringify(JSON.parse(button.dataset.film)); watchedFilmSearch.value = JSON.parse(button.dataset.film).title; watchedFilmResults.innerHTML = ""; }));
+  } catch (error) { watchedStatus.textContent = error.message; }
+}
+
 async function searchVenues() {
   const query = venueName.value.trim();
   if (query.length < 3 || venueType.value === "home") return;
@@ -229,5 +251,15 @@ form.addEventListener("submit", async (event) => {
 });
 
 venueType.addEventListener("change", updateVenueFields);
+watchedFilmSearch.addEventListener("input", () => { clearTimeout(watchedFilmTimer); watchedFilmTimer = setTimeout(searchWatchedFilms, 300); });
+watchedVenueType.addEventListener("change", () => watchedVenueField.classList.toggle("hidden", watchedVenueType.value === "home"));
+watchedForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const film = watchedFilmData.value ? JSON.parse(watchedFilmData.value) : null;
+  if (!film?.id || !watchedDate.value) { watchedStatus.textContent = "Choose a film and date first."; return; }
+  const response = await fetch("/api/watched", { method: "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify({ date: watchedDate.value, film: { id: film.id, title: film.title, year: (film.release_date || "").slice(0, 4), poster: posterUrl(film.poster_path) }, venue: { type: watchedVenueType.value, name: watchedVenueType.value === "home" ? "My TV" : watchedVenueName.value.trim(), location: "" } }) });
+  if (!response.ok) { watchedStatus.textContent = "The watch could not be saved."; return; }
+  watchedForm.reset(); watchedFilmData.value = ""; watchedStatus.textContent = "Added to recent watches.";
+});
 renderPresetTags();
 updateVenueFields();

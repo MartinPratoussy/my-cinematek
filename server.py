@@ -47,6 +47,23 @@ class Database:
                 self.query(f"ALTER TABLE posts ADD COLUMN {column} {definition}")
             except Exception:
                 pass
+        self.query(f"CREATE TABLE IF NOT EXISTS watched_films (id {identity}, watched_date TEXT NOT NULL, venue TEXT NOT NULL DEFAULT '', film TEXT NOT NULL)")
+
+    def insert_watched(self, item):
+        values = (item["date"], json.dumps(item.get("venue", {})), json.dumps(item.get("film", {})))
+        statement = "INSERT INTO watched_films (watched_date, venue, film) VALUES (?, ?, ?)"
+        if self.postgres:
+            return self.query(statement + " RETURNING id", values, True)[0][0]
+        cursor = self.connection.cursor()
+        cursor.execute(statement, values)
+        item_id = cursor.lastrowid
+        self.connection.commit()
+        cursor.close()
+        return item_id
+
+    def all_watched(self):
+        rows = self.query("SELECT id, watched_date, venue, film FROM watched_films ORDER BY watched_date DESC LIMIT 8", fetch=True)
+        return [{"id": row[0], "date": row[1], "venue": json.loads(row[2] or "{}"), "film": json.loads(row[3])} for row in rows]
         print("Database schema ready.", flush=True)
 
     def insert_post(self, post):
@@ -83,6 +100,7 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query).get("query", [""])[0].strip()
         if parsed.path == "/api/posts": return self.send_json(db.all_posts())
+        if parsed.path == "/api/watched": return self.send_json(db.all_watched())
         if parsed.path == "/api/search": return self.search_tmdb(query)
         if parsed.path == "/api/movie": return self.movie_details(parse_qs(parsed.query).get("id", [""])[0].strip())
         if parsed.path == "/api/places": return self.search_places(query)
@@ -93,6 +111,9 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         if path == "/api/auth":
             authenticated = self.authorized()
             return self.send_json({"authenticated": authenticated}, 200 if authenticated else 401)
+        if path == "/api/watched":
+            if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
+            return self.send_json({"id": db.insert_watched(self.read_json())}, 201)
         if path != "/api/posts": return self.send_json({"error": "Not found."}, 404)
         if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
         post_id = db.insert_post(self.read_json())

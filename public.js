@@ -1,4 +1,5 @@
 const postsList = document.getElementById("posts-list");
+const watchedList = document.getElementById("watched-list");
 const modal = document.getElementById("critic-modal");
 const modalContent = document.getElementById("modal-content");
 
@@ -19,6 +20,11 @@ async function loadPosts() {
   if (!text.trim()) throw new Error("The review archive returned an empty response.");
   return JSON.parse(text);
 }
+async function loadWatched() {
+  const response = await fetch(`/api/watched?fresh=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("Recent watches could not be loaded.");
+  return response.json();
+}
 function technicalFacts(film) {
   return `<div class="technical-grid"><span>Director<strong>${escapeHtml(film.director || "Not listed")}</strong></span><span>Main cast<strong>${escapeHtml((film.cast || []).join(", ") || "Not listed")}</strong></span><span>Runtime<strong>${film.runtime ? `${film.runtime} min` : "Not listed"}</strong></span><span>Budget<strong>${money(film.budget)}</strong></span><span>Genres<strong>${escapeHtml((film.genres || []).join(", ") || "Not listed")}</strong></span><span>Country<strong>${escapeHtml((film.countries || []).join(", ") || "Not listed")}</strong></span></div>`;
 }
@@ -33,6 +39,9 @@ function renderDiary(posts) {
   postsList.innerHTML = posts.map((post, index) => `<button class="diary-row ${index === 0 ? "diary-row-latest" : ""}" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(post.date)}${index === 0 ? "<small>latest</small>" : ""}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueLabel(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
 }
+function renderWatched(items) {
+  watchedList.innerHTML = items.length ? items.map((item) => `<div class="watched-item">${item.film?.poster ? `<img src="${escapeHtml(item.film.poster)}" alt="" />` : ""}<div><strong>${escapeHtml(item.film?.title || "Untitled film")}</strong><span>${escapeHtml(item.date)} · ${venueLabel(item.venue) || "watch"}</span></div></div>`).join("") : '<p class="empty-state">No unwritten screenings yet.</p>';
+}
 document.querySelectorAll("[data-close-modal]").forEach((element) => element.addEventListener("click", closeModal));
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
-loadPosts().then((posts) => renderDiary(sortPosts(posts))).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
+Promise.all([loadPosts(), loadWatched()]).then(([posts, watched]) => { renderDiary(sortPosts(posts)); renderWatched(watched); }).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });

@@ -8,7 +8,7 @@
       name="description"
       content="A personal movie review journal for writing about the films you watched in theaters, on the sofa, or anywhere else."
     />
-    <link rel="stylesheet" href="styles.css?v=20260924-7" />
+    <link rel="stylesheet" href="styles.css?v=20260924-9" />
   </head>
   <body>
     <header class="site-header">
@@ -30,13 +30,20 @@
         </p>
       </section>
 
-      <section id="diary" class="diary-section">
-        <div class="section-head">
-          <p class="eyebrow">the diary</p>
-          <h2>Every film leaves a room behind.</h2>
-        </div>
-        <div id="posts-list" class="post-list" aria-live="polite"></div>
-      </section>
+      <div class="diary-layout">
+        <section id="diary" class="diary-section">
+          <div class="section-head">
+            <p class="eyebrow">the diary</p>
+            <h2>Every film leaves a room behind.</h2>
+          </div>
+          <div id="posts-list" class="post-list" aria-live="polite"></div>
+        </section>
+
+        <aside id="watched-shelf" class="watched-shelf" aria-labelledby="watched-title">
+          <div class="section-head"><p class="eyebrow">recently watched</p><h2 id="watched-title">Still waiting for a critic.</h2></div>
+          <div id="watched-list" class="watched-list"></div>
+        </aside>
+      </div>
 
       <section id="about" class="about-note">
         <p class="eyebrow">about this place</p>
@@ -56,6 +63,6 @@
       </article>
     </div>
 
-    <script src="public.js?v=20260924-7"></script>
+    <script src="public.js?v=20260924-9"></script>
   </body>
 </html>

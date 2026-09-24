@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin | my-cinematek</title>
-    <link rel="stylesheet" href="styles.css?v=20260924-6" />
+    <link rel="stylesheet" href="styles.css?v=20260924-9" />
   </head>
   <body>
     <header class="site-header">
@@ -82,6 +82,23 @@
             <button id="publish-button" class="primary-btn" type="submit">Publish critic</button>
             <button id="cancel-edit" class="secondary-btn hidden" type="button">Cancel edit</button>
           </div>
+        </form>
+
+        <form id="watched-form" class="panel admin-form watched-form">
+          <div class="section-head"><p class="eyebrow">without a critic</p><h2>Log a recent watch</h2></div>
+          <div class="film-picker">
+            <label for="watched-film-search">Find a film</label>
+            <input id="watched-film-search" type="search" placeholder="Start typing a film title" autocomplete="off" />
+            <div id="watched-film-results" class="film-results"></div>
+            <input id="watched-film-data" type="hidden" />
+          </div>
+          <div class="field-grid">
+            <label>Date watched<input id="watched-date" type="date" required /></label>
+            <label>Watched at<select id="watched-venue-type"><option value="cinema">Cinema</option><option value="home">My TV / home</option></select></label>
+          </div>
+          <label id="watched-venue-name-field">Cinema name<input id="watched-venue-name" type="text" /></label>
+          <button class="secondary-btn" type="submit">Add to recent watches</button>
+          <p id="watched-status" class="field-hint" aria-live="polite"></p>
         </form>
 
         <section class="admin-posts">
