@@ -40,7 +40,7 @@ function renderFeatured(post) {
     return;
   }
 
-  featuredPost.innerHTML = `<details class="featured-reader panel"><summary>${post.film?.poster ? `<img class="preview-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="eyebrow">latest critic</span><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><h2>${escapeHtml(post.title)}</h2><span class="open-label">open critic</span></summary>${fullCritic(post)}</details>`;
+  featuredPost.innerHTML = `<details class="featured-reader panel"><summary><div class="preview-art">${post.film?.poster ? `<img class="preview-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : "<span class=\"poster-empty\">no poster</span>"}</div><div class="preview-copy"><span class="eyebrow">latest critic</span><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><h2>${escapeHtml(post.title)}</h2><span class="open-label">open critic</span></div></summary>${fullCritic(post)}</details>`;
 }
 
 function fullCritic(post) {

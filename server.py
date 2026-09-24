@@ -9,12 +9,11 @@ from urllib.request import Request, urlopen
 TMDB_API_URL = "https://api.themoviedb.org/3/search/movie"
 DEFAULT_DB = os.path.join(os.environ.get("LOCALAPPDATA", os.path.dirname(__file__)), "my-cinematek.db")
 
-
 class Database:
     def __init__(self):
         self.postgres = bool(os.environ.get("DATABASE_URL"))
         if os.environ.get("RENDER") and not self.postgres:
-            raise RuntimeError("DATABASE_URL is required on Render; refusing to use ephemeral SQLite storage.")
+            raise RuntimeError("DATABASE_URL is required on Render.")
         if self.postgres:
             import psycopg
             self.connection = psycopg.connect(os.environ["DATABASE_URL"])
@@ -58,8 +57,7 @@ class Database:
         cursor.close()
         return post_id
 
-    @staticmethod
-    def serialize(row):
+    def serialize(self, row):
         return {"id": row[0], "title": row[1], "movieTitle": row[2], "date": row[3], "rating": row[4], "context": row[5], "venue": json.loads(row[6] or "{}"), "tags": json.loads(row[7]), "body": row[8], "conclusion": row[9], "film": json.loads(row[10])}
 
     def all_posts(self):
@@ -74,19 +72,16 @@ class Database:
         values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})), post_id)
         self.query("UPDATE posts SET title = ?, movie_title = ?, watched_date = ?, rating = ?, context = ?, venue = ?, tags = ?, body = ?, conclusion = ?, film = ? WHERE id = ?", values)
 
-
 db = Database()
-
 
 class CinematekHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path == "/api/posts":
-            return self.send_json(db.all_posts())
-        if parsed.path == "/api/search":
-            return self.search_tmdb(parse_qs(parsed.query).get("query", [""])[0].strip())
-        if parsed.path == "/api/places":
-            return self.search_places(parse_qs(parsed.query).get("query", [""])[0].strip())
+        query = parse_qs(parsed.query).get("query", [""])[0].strip()
+        if parsed.path == "/api/posts": return self.send_json(db.all_posts())
+        if parsed.path == "/api/search": return self.search_tmdb(query)
+        if parsed.path == "/api/movie": return self.movie_details(parse_qs(parsed.query).get("id", [""])[0].strip())
+        if parsed.path == "/api/places": return self.search_places(query)
         return super().do_GET()
 
     def do_POST(self):
@@ -94,54 +89,49 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         if path == "/api/auth":
             authenticated = self.authorized()
             return self.send_json({"authenticated": authenticated}, 200 if authenticated else 401)
-        if path != "/api/posts":
-            return self.send_json({"error": "Not found."}, 404)
-        if not self.authorized():
-            return self.send_json({"error": "Author access required."}, 401)
+        if path != "/api/posts": return self.send_json({"error": "Not found."}, 404)
+        if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
         post_id = db.insert_post(self.read_json())
         return self.send_json(db.get_post(post_id), 201)
 
     def do_PUT(self):
-        parsed = urlparse(self.path)
-        if not parsed.path.startswith("/api/posts/"):
-            return self.send_json({"error": "Not found."}, 404)
-        if not self.authorized():
-            return self.send_json({"error": "Author access required."}, 401)
-        post_id = int(parsed.path.rsplit("/", 1)[-1])
-        db.update_post(post_id, self.read_json())
-        return self.send_json(db.get_post(post_id))
+        path = urlparse(self.path).path
+        if not path.startswith("/api/posts/"): return self.send_json({"error": "Not found."}, 404)
+        if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
+        db.update_post(int(path.rsplit("/", 1)[-1]), self.read_json())
+        return self.send_json(db.get_post(int(path.rsplit("/", 1)[-1])))
 
-    def authorized(self):
-        return self.headers.get("X-Author-Password") == os.environ.get("AUTHOR_PASSWORD", "cinematek")
-
-    def read_json(self):
-        length = int(self.headers.get("Content-Length", 0))
-        return json.loads(self.rfile.read(length).decode("utf-8"))
+    def authorized(self): return self.headers.get("X-Author-Password") == os.environ.get("AUTHOR_PASSWORD", "cinematek")
+    def read_json(self): return json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8"))
 
     def search_tmdb(self, query):
-        api_key = os.environ.get("TMDB_API_KEY")
-        if not api_key:
-            return self.send_json({"error": "Film search is not configured yet."}, 503)
-        request = Request(f"{TMDB_API_URL}?api_key={api_key}&language=en-US&include_adult=false&query={query}", headers={"Accept": "application/json"})
+        key = os.environ.get("TMDB_API_KEY")
+        if not key: return self.send_json({"error": "Film search is not configured yet."}, 503)
+        request = Request(f"{TMDB_API_URL}?api_key={key}&language=en-US&include_adult=false&query={query}", headers={"Accept": "application/json"})
         try:
-            with urlopen(request, timeout=10) as response:
-                return self.send_json({"results": json.loads(response.read().decode("utf-8")).get("results", [])})
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
-            return self.send_json({"error": "Film catalogue is temporarily unavailable."}, 502)
+            with urlopen(request, timeout=10) as response: return self.send_json({"results": json.loads(response.read().decode()).get("results", [])})
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError): return self.send_json({"error": "Film catalogue is temporarily unavailable."}, 502)
+
+    def movie_details(self, movie_id):
+        key = os.environ.get("TMDB_API_KEY")
+        if not key or not movie_id.isdigit(): return self.send_json({"error": "Film details are unavailable."}, 400)
+        request = Request(f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={key}&language=en-US&append_to_response=credits", headers={"Accept": "application/json"})
+        try:
+            with urlopen(request, timeout=10) as response: film = json.loads(response.read().decode())
+            director = next((person["name"] for person in film.get("credits", {}).get("crew", []) if person.get("job") == "Director"), "")
+            return self.send_json({"id": film.get("id"), "title": film.get("title", ""), "year": (film.get("release_date") or "")[:4], "poster": f"https://image.tmdb.org/t/p/w500{film['poster_path']}" if film.get("poster_path") else "", "runtime": film.get("runtime"), "genres": [item["name"] for item in film.get("genres", [])], "director": director, "cast": [item["name"] for item in film.get("credits", {}).get("cast", [])[:5]], "budget": film.get("budget") or 0, "countries": [item["name"] for item in film.get("production_countries", [])]})
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError): return self.send_json({"error": "Film details are temporarily unavailable."}, 502)
 
     def search_places(self, query):
-        if not query:
-            return self.send_json({"results": []})
+        if not query: return self.send_json({"results": []})
         request = Request(f"https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=fr,de,be,lu,ch,gb&q={quote_plus(query + ' cinema')}", headers={"User-Agent": "my-cinematek/1.0", "Accept": "application/json"})
         try:
-            with urlopen(request, timeout=10) as response:
-                places = json.loads(response.read().decode("utf-8"))
-            return self.send_json({"results": [{"name": place.get("display_name", "").split(",")[0], "displayName": place.get("display_name", ""), "location": f"https://www.openstreetmap.org/?mlat={place.get('lat')}&mlon={place.get('lon')}#map=18/{place.get('lat')}/{place.get('lon')}"} for place in places]})
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
-            return self.send_json({"error": "Cinema search is temporarily unavailable."}, 502)
+            with urlopen(request, timeout=10) as response: places = json.loads(response.read().decode())
+            return self.send_json({"results": [{"name": item.get("display_name", "").split(",")[0], "displayName": item.get("display_name", ""), "location": f"https://www.openstreetmap.org/?mlat={item.get('lat')}&mlon={item.get('lon')}#map=18/{item.get('lat')}/{item.get('lon')}"} for item in places]})
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError): return self.send_json({"error": "Cinema search is temporarily unavailable."}, 502)
 
     def send_json(self, payload, status=200):
-        body = json.dumps(payload).encode("utf-8")
+        body = json.dumps(payload).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -149,7 +139,5 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "8000"))
-    ThreadingHTTPServer(("", port), CinematekHandler).serve_forever()
+    ThreadingHTTPServer(("", int(os.environ.get("PORT", "8000"))), CinematekHandler).serve_forever()
