@@ -62,7 +62,21 @@
             <label>Rating<input id="rating" type="number" min="0" max="10" step="0.5" value="8" required /></label>
           </div>
           <label>Tags<input id="tags" type="text" placeholder="Optional tags" /></label>
-          <label>Viewing context<input id="context" type="text" placeholder="Where did you watch it?" /></label>
+          <div class="preset-tags" aria-label="Preset tags">
+            <span class="field-hint">Presets</span>
+            <div id="preset-tags" class="preset-tag-list"></div>
+          </div>
+          <div class="venue-fields">
+            <label>Watched at
+              <select id="venue-type">
+                <option value="cinema">Cinema</option>
+                <option value="home">My TV / home</option>
+              </select>
+            </label>
+            <label id="venue-name-field">Cinema name<input id="venue-name" type="text" placeholder="Cinema name" /></label>
+            <label id="venue-location-field">Location or map link<input id="venue-location" type="url" placeholder="https://maps.google.com/..." /><button id="venue-map-search" class="secondary-btn" type="button">Create map link</button></label>
+          </div>
+          <label>Viewing context<input id="context" type="text" placeholder="Optional note about the screening" /></label>
           <label>Your critic<textarea id="review-body" rows="12" placeholder="Write what stayed with you." required></textarea></label>
           <div class="form-actions">
             <button id="publish-button" class="primary-btn" type="submit">Publish critic</button>

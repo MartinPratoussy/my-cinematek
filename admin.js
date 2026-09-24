@@ -14,10 +14,42 @@ const selectedFilm = document.getElementById("selected-film");
 const filmData = document.getElementById("film-data");
 const cancelEdit = document.getElementById("cancel-edit");
 const adminPostList = document.getElementById("admin-post-list");
+const presetTags = document.getElementById("preset-tags");
+const venueType = document.getElementById("venue-type");
+const venueName = document.getElementById("venue-name");
+const venueLocation = document.getElementById("venue-location");
+const venueNameField = document.getElementById("venue-name-field");
+const venueLocationField = document.getElementById("venue-location-field");
+const venueMapSearch = document.getElementById("venue-map-search");
+
+const TAG_PRESETS = ["horror", "drama", "comedy", "thriller", "romance", "science fiction", "animation", "documentary", "rewatch", "classic"];
 
 let authorSecret = "";
 let editingPostId = null;
 let selectedFilmData = null;
+
+function renderPresetTags() {
+  presetTags.innerHTML = TAG_PRESETS.map((tag) => `<button type="button" class="preset-tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("");
+  presetTags.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => {
+    const tags = document.getElementById("tags");
+    const current = tags.value.split(",").map((tag) => tag.trim()).filter(Boolean);
+    if (!current.includes(button.dataset.tag)) current.push(button.dataset.tag);
+    tags.value = current.join(", ");
+    button.classList.toggle("selected", current.includes(button.dataset.tag));
+  }));
+}
+
+function updateVenueFields() {
+  const home = venueType.value === "home";
+  venueNameField.classList.toggle("hidden", home);
+  venueLocationField.classList.toggle("hidden", home);
+  if (home) {
+    venueName.value = "My TV";
+    venueLocation.value = "";
+  } else if (venueName.value === "My TV") {
+    venueName.value = "";
+  }
+}
 
 async function readJson(response) {
   const text = await response.text();
@@ -67,6 +99,7 @@ function resetForm() {
   document.getElementById("rating").value = 8;
   document.getElementById("publish-button").textContent = "Publish critic";
   cancelEdit.classList.add("hidden");
+  updateVenueFields();
 }
 
 function selectFilm(film) {
@@ -105,6 +138,10 @@ function editPost(post) {
   document.getElementById("rating").value = post.rating;
   document.getElementById("tags").value = (post.tags || []).join(", ");
   document.getElementById("context").value = post.context || "";
+  venueType.value = post.venue?.type || "cinema";
+  venueName.value = post.venue?.name || "";
+  venueLocation.value = post.venue?.location || "";
+  updateVenueFields();
   document.getElementById("review-body").value = post.body;
   selectedFilm.innerHTML = `${selectedFilmData.poster ? `<img src="${escapeHtml(selectedFilmData.poster)}" alt="" />` : ""}<div><p class="eyebrow">selected film</p><h3>${escapeHtml(post.movieTitle)}</h3><p>${escapeHtml(selectedFilmData.year || "")}</p></div>`;
   selectedFilm.classList.remove("hidden");
@@ -144,7 +181,7 @@ cancelEdit.addEventListener("click", resetForm);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const savedFilm = selectedFilmData || (filmData.value ? JSON.parse(filmData.value) : null);
-  const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), film: savedFilm };
+  const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), venue: { type: venueType.value, name: venueType.value === "home" ? "My TV" : venueName.value.trim(), location: venueType.value === "home" ? "" : venueLocation.value.trim() }, tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), film: savedFilm };
   if (!post.title || !post.movieTitle || !post.date || !post.body || !savedFilm?.title) { editorStatus.textContent = "Choose a film and complete the critic first."; return; }
   const response = await fetch(editingPostId ? `/api/posts/${editingPostId}` : "/api/posts", { method: editingPostId ? "PUT" : "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify(post) });
   if (!response.ok) { editorStatus.textContent = "The critic could not be saved."; return; }
@@ -152,3 +189,11 @@ form.addEventListener("submit", async (event) => {
   editorStatus.textContent = "Critic saved.";
   loadAdminPosts();
 });
+
+venueType.addEventListener("change", updateVenueFields);
+venueMapSearch.addEventListener("click", () => {
+  const query = venueName.value.trim();
+  if (query) venueLocation.value = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+});
+renderPresetTags();
+updateVenueFields();

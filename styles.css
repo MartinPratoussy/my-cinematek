@@ -647,7 +647,15 @@ input, textarea { color: var(--ink); background: #242323; border-color: var(--bo
 .admin-post h3, .admin-post p { margin: 0; }
 .admin-post h3 { font-family: Georgia, "Times New Roman", serif; font-size: 1.35rem; font-weight: 400; }
 .admin-post p:last-child { color: var(--ink-soft); font-size: .9rem; }
+.preset-tags { margin: -.35rem 0 1rem; }
+.preset-tag-list { display: flex; flex-wrap: wrap; gap: .45rem; }
+.preset-tag { padding: .3rem .65rem; color: var(--ink-soft); background: transparent; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; font-size: .75rem; }
+.preset-tag:hover, .preset-tag.selected { color: #171310; background: var(--accent); border-color: var(--accent); }
+.venue-fields { display: grid; grid-template-columns: minmax(130px, .7fr) minmax(180px, 1fr) minmax(180px, 1fr); gap: 1rem; }
+.venue-fields select { width: 100%; padding: .8rem .9rem; color: var(--ink); background: #242323; border: 1px solid var(--border); border-radius: 0; }
+.venue-fields a, .meta-row a { color: var(--accent-strong); }
 
 @media (max-width: 760px) {
   .admin-heading { align-items: flex-start; flex-direction: column; }
+  .venue-fields { grid-template-columns: 1fr; gap: 0; }
 }

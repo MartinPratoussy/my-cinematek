@@ -11,6 +11,13 @@ function posterUrl(path) {
   return path ? `https://image.tmdb.org/t/p/w342${path}` : "";
 }
 
+function venueLabel(venue) {
+  if (!venue || !venue.name) return "";
+  const label = escapeHtml(venue.name);
+  if (!venue.location || !/^https?:\/\//i.test(venue.location)) return label;
+  return `<a href="${escapeHtml(venue.location)}" target="_blank" rel="noreferrer">${label}</a>`;
+}
+
 function sortPosts(posts) {
   return [...posts].sort((a, b) => new Date(b.date) - new Date(a.date));
 }
@@ -29,7 +36,7 @@ function renderFeatured(post) {
 
   featuredPost.innerHTML = `
     <div class="featured-copy">
-      <div class="meta-row post-meta"><span>latest critic</span><span>${escapeHtml(post.date)}</span><span>${escapeHtml(post.context || "review")}</span></div>
+      <div class="meta-row post-meta"><span>latest critic</span><span>${escapeHtml(post.date)}</span><span>${venueLabel(post.venue) || escapeHtml(post.context || "review")}</span></div>
       <p class="film-kicker">${escapeHtml(post.movieTitle)} · ★ ${Number(post.rating).toFixed(1)}</p>
       <h2>${escapeHtml(post.title)}</h2>
       <div class="meta-row post-meta">${(post.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
@@ -48,7 +55,7 @@ function renderPosts(posts) {
   postsList.innerHTML = posts.map((post) => `
     <details class="post-card" data-id="${post.id}">
       <summary>
-        <div class="meta-row"><span>${escapeHtml(post.date)}</span><span>${escapeHtml(post.context || "review")}</span></div>
+        <div class="meta-row"><span>${escapeHtml(post.date)}</span><span>${venueLabel(post.venue) || escapeHtml(post.context || "review")}</span></div>
         <h3>${escapeHtml(post.title)}</h3>
         <div class="meta-row"><span>${escapeHtml(post.movieTitle)}</span><span>★ ${Number(post.rating).toFixed(1)}</span></div>
         <p>${escapeHtml((post.body || "").split("\n")[0]).slice(0, 140)}${(post.body || "").length > 140 ? "..." : ""}</p>
