@@ -89,6 +89,22 @@ textarea {
 .viewing-context .eyebrow { margin-bottom: .45rem; }
 .viewing-context-line { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem 1.2rem; color: var(--ink-soft); font-family: Georgia, "Times New Roman", serif; font-size: 1rem; }
 .viewing-context-line > span + span { padding-left: 1.2rem; border-left: 1px solid #704049; }
+.poster-button { display: block; padding: 0; background: transparent; border: 0; cursor: pointer; }
+.poster-button .critic-poster { transition: transform .2s ease, filter .2s ease; }
+.poster-button:hover .critic-poster, .poster-button:focus-visible .critic-poster { filter: brightness(1.15); transform: scale(1.03); }
+.film-modal-dialog { max-width: 760px; }
+.film-details-heading { display: flex; align-items: center; gap: 1.4rem; }
+.film-details-heading h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 400; }
+.film-details-poster { width: 130px; aspect-ratio: 2 / 3; object-fit: cover; border: 1px solid #6f3840; box-shadow: 0 12px 28px rgba(0, 0, 0, .45); }
+.film-tagline { color: var(--ink-soft); font-family: Georgia, "Times New Roman", serif; font-style: italic; }
+.film-overview-block { margin-top: 2rem; padding-top: 1.2rem; border-top: 1px solid var(--border); color: var(--ink-soft); font-family: Georgia, "Times New Roman", serif; line-height: 1.7; }
+.film-homepage { margin-top: 1.5rem; }
+.recent-watch-poster-button { grid-column: 2; }
+.recent-watch-poster-button .recent-watch-poster { display: block; }
+@media (max-width: 600px) {
+  .film-details-heading { align-items: flex-start; }
+  .film-details-poster { width: 92px; }
+}
 @media (max-width: 900px) {
   .diary-layout { grid-template-columns: minmax(0, 1fr) 330px !important; gap: 1.25rem !important; }
 }

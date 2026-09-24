@@ -168,7 +168,7 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         try:
             with urlopen(request, timeout=10) as response: film = json.loads(response.read().decode())
             director = next((person["name"] for person in film.get("credits", {}).get("crew", []) if person.get("job") == "Director"), "")
-            return self.send_json({"id": film.get("id"), "title": film.get("title", ""), "year": (film.get("release_date") or "")[:4], "poster": f"https://image.tmdb.org/t/p/w500{film['poster_path']}" if film.get("poster_path") else "", "runtime": film.get("runtime"), "genres": [item["name"] for item in film.get("genres", [])], "director": director, "cast": [item["name"] for item in film.get("credits", {}).get("cast", [])[:5]], "budget": film.get("budget") or 0, "countries": [item["name"] for item in film.get("production_countries", [])]})
+            return self.send_json({"id": film.get("id"), "title": film.get("title", ""), "year": (film.get("release_date") or "")[:4], "releaseDate": film.get("release_date", ""), "poster": f"https://image.tmdb.org/t/p/w500{film['poster_path']}" if film.get("poster_path") else "", "runtime": film.get("runtime"), "genres": [item["name"] for item in film.get("genres", [])], "director": director, "cast": [item["name"] for item in film.get("credits", {}).get("cast", [])[:5]], "budget": film.get("budget") or 0, "countries": [item["name"] for item in film.get("production_countries", [])], "overview": film.get("overview", ""), "tagline": film.get("tagline", ""), "homepage": film.get("homepage", "")})
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError): return self.send_json({"error": "Film details are temporarily unavailable."}, 502)
 
     def search_places(self, query):

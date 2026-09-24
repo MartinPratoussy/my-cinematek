@@ -3,11 +3,17 @@ const loadMorePosts = document.getElementById("load-more-posts");
 const watchedList = document.getElementById("watched-list");
 const modal = document.getElementById("critic-modal");
 const modalContent = document.getElementById("modal-content");
+const filmModal = document.getElementById("film-modal");
+const filmModalContent = document.getElementById("film-modal-content");
 
 function escapeHtml(value = "") {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
 }
 function money(value) { return value ? `${Number(value).toLocaleString("fr-FR")} $` : "Non renseigné"; }
+function formatDate(value) {
+  const parts = String(value || "").split("-");
+  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value || "";
+}
 function venueLabel(venue) {
   if (!venue || !venue.name) return "";
   const label = escapeHtml(venue.name);
@@ -48,31 +54,50 @@ async function loadWatched() {
 function technicalFacts(film) {
   return `<div class="technical-grid"><span>Réalisation<strong>${escapeHtml(film.director || "Non renseignée")}</strong></span><span>Distribution<strong>${escapeHtml((film.cast || []).join(", ") || "Non renseignée")}</strong></span><span>Durée<strong>${film.runtime ? `${film.runtime} min` : "Non renseignée"}</strong></span><span>Budget<strong>${money(film.budget)}</strong></span><span>Genres<strong>${escapeHtml((film.genres || []).join(", ") || "Non renseignés")}</strong></span><span>Pays<strong>${escapeHtml((film.countries || []).join(", ") || "Non renseigné")}</strong></span></div>`;
 }
+function filmDetailsMarkup(film) {
+  return `<div class="film-details"><div class="film-details-heading">${film.poster ? `<img class="film-details-poster" src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(film.title)}" />` : ""}<div><p class="eyebrow">détails du film</p><h2 id="film-modal-title">${escapeHtml(film.title || "Film")}</h2>${film.tagline ? `<p class="film-tagline">${escapeHtml(film.tagline)}</p>` : ""}</div></div>${technicalFacts(film)}${film.overview ? `<section class="film-overview-block"><p class="eyebrow">synopsis</p><p>${escapeHtml(film.overview)}</p></section>` : ""}${film.homepage ? `<a class="venue-map-button film-homepage" href="${escapeHtml(film.homepage)}" target="_blank" rel="noreferrer">Voir la fiche officielle</a>` : ""}</div>`;
+}
+async function openFilmModal(film) {
+  let details = film;
+  if (film?.id) {
+    try {
+      const response = await fetch(`/api/movie?id=${film.id}`);
+      if (response.ok) details = { ...film, ...(await response.json()) };
+    } catch { /* Keep the stored film data as a fallback. */ }
+  }
+  filmModalContent.innerHTML = filmDetailsMarkup(details || {});
+  filmModal.hidden = false;
+  document.body.classList.add("modal-open");
+  filmModal.querySelector(".modal-close").focus();
+}
+function closeFilmModal() { filmModal.hidden = true; if (modal.hidden) document.body.classList.remove("modal-open"); }
 
 function viewingContextMarkup(post) {
   const place = venueButton(post.venue) || escapeHtml(post.context || "Chez soi");
-  return `<aside class="viewing-context"><p class="eyebrow">séance</p><div class="viewing-context-line"><span>${escapeHtml(post.date)}</span><span>${place}</span></div></aside>`;
+  return `<aside class="viewing-context"><p class="eyebrow">séance</p><div class="viewing-context-line"><span>${escapeHtml(formatDate(post.date))}</span><span>${place}</span></div></aside>`;
 }
 
 function criticMarkup(post) {
   const film = post.film || {};
-  return `<section class="film-information"><p class="eyebrow">le film</p><div class="modal-film-heading">${film.poster ? `<img class="critic-poster" src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(post.movieTitle)}" />` : ""}<div><h2 id="modal-title">${escapeHtml(post.movieTitle)}</h2><p>${escapeHtml(film.year || "")}</p></div></div>${technicalFacts(film)}</section>${viewingContextMarkup(post)}<section class="critic-text"><p class="eyebrow">la critique</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section>`;
+  return `<section class="film-information"><p class="eyebrow">le film</p><div class="modal-film-heading">${film.poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(post.movieTitle)}" /></button>` : ""}<div><h2 id="modal-title">${escapeHtml(post.movieTitle)}</h2><p>${escapeHtml(film.year || "")}</p></div></div>${technicalFacts(film)}</section>${viewingContextMarkup(post)}<section class="critic-text"><p class="eyebrow">la critique</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section>`;
 }
-function openModal(post) { modalContent.innerHTML = criticMarkup(post); modal.hidden = false; document.body.classList.add("modal-open"); modal.querySelector(".modal-close").focus(); }
+function openModal(post) { modalContent.innerHTML = criticMarkup(post); modal.hidden = false; document.body.classList.add("modal-open"); modal.querySelector(".modal-close").focus(); modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle })); }
 function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
 function renderDiary(posts, append = false) {
   if (!posts.length) {
     if (!append) postsList.innerHTML = '<p class="empty-state">Le journal est vide.</p>';
     return;
   }
-  const markup = posts.map((post, index) => `<button class="diary-row ${!append && index === 0 ? "diary-row-latest" : ""}" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(post.date)}${!append && index === 0 ? "<small>dernière</small>" : ""}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueLabel(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
+  const markup = posts.map((post, index) => `<button class="diary-row ${!append && index === 0 ? "diary-row-latest" : ""}" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(formatDate(post.date))}${!append && index === 0 ? "<small>dernière</small>" : ""}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
   if (append) postsList.insertAdjacentHTML("beforeend", markup); else postsList.innerHTML = markup;
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
 }
 function renderWatched(items) {
-  watchedList.innerHTML = items.length ? items.map((item) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(item.film?.title || "Film sans titre")}${item.rewatch ? ' <em>revu</em>' : ""}</strong><span>${escapeHtml(item.date)} · ${venueButton(item.venue) || "visionnage"}${item.rating !== null && item.rating !== undefined ? ` · ★ ${Number(item.rating).toFixed(1)}` : ""}</span>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${item.film?.poster ? `<img class="recent-watch-poster" src="${escapeHtml(item.film.poster)}" alt="" />` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>';
+  watchedList.innerHTML = items.length ? items.map((item, index) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(item.film?.title || "Film sans titre")}${item.rewatch ? ' <em>revu</em>' : ""}</strong><span>${escapeHtml(formatDate(item.date))} · ${venueButton(item.venue) || "visionnage"}${item.rating !== null && item.rating !== undefined ? ` · ★ ${Number(item.rating).toFixed(1)}` : ""}</span>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${item.film?.poster ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(item.film.poster)}" alt="" /></button>` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>';
+  watchedList.querySelectorAll(".recent-watch-poster-button").forEach((button) => button.addEventListener("click", () => openFilmModal(items[Number(button.dataset.watchedIndex)].film)));
 }
 document.querySelectorAll("[data-close-modal]").forEach((element) => element.addEventListener("click", closeModal));
+document.querySelectorAll("[data-close-film-modal]").forEach((element) => element.addEventListener("click", closeFilmModal));
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
 let postOffset = 0;
 loadPosts().then((posts) => { postOffset = posts.length; renderDiary(posts); loadMorePosts.hidden = posts.length < 8; return loadWatched(); }).then(renderWatched).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
