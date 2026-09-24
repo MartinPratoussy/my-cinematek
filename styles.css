@@ -584,7 +584,7 @@ textarea {
     display: flex;
     flex-direction: column;
     width: 100%;
-    min-height: 520px;
+    min-height: 430px;
     overflow: hidden;
     border: 1px solid rgba(210, 178, 142, 0.25);
     background: linear-gradient(180deg, rgba(36, 27, 24, 0.98), rgba(25, 18, 16, 0.96));
@@ -614,7 +614,7 @@ textarea {
 
 .featured-review-cover {
     flex: 1 1 auto;
-    min-height: 360px;
+    min-height: 280px;
     width: 100%;
     overflow: hidden;
     background: rgba(17, 17, 17, 0.12);
@@ -645,8 +645,8 @@ textarea {
     margin: 0;
     color: #f7efe7;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: clamp(2rem, 2.2vw, 2.8rem);
-    line-height: 1.04;
+    font-size: clamp(1.5rem, 1.8vw, 2.2rem);
+    line-height: 1.08;
     letter-spacing: -0.04em;
 }
 
