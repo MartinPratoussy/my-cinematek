@@ -101,14 +101,23 @@ function resetForm() {
   updateVenueFields();
 }
 
-function selectFilm(film) {
-  selectedFilmData = { id: film.id, title: film.title || "", year: (film.release_date || "").slice(0, 4), overview: film.overview || "", poster: posterUrl(film.poster_path), backdrop: posterUrl(film.backdrop_path) };
+async function selectFilm(film) {
+  filmSearchStatus.textContent = "Loading film details...";
+  try {
+    const response = await fetch(`/api/movie?id=${film.id}`);
+    const details = await readJson(response);
+    if (!response.ok) throw new Error(details.error || "Film details unavailable.");
+    selectedFilmData = details;
+  } catch (error) {
+    filmSearchStatus.textContent = error.message;
+    return;
+  }
   document.getElementById("movie-title").value = selectedFilmData.title;
   filmData.value = JSON.stringify(selectedFilmData);
   selectedFilm.innerHTML = `${selectedFilmData.poster ? `<img src="${escapeHtml(selectedFilmData.poster)}" alt="" />` : ""}<div><p class="eyebrow">selected film</p><h3>${escapeHtml(selectedFilmData.title)}</h3><p>${escapeHtml(selectedFilmData.year || "")}</p></div>`;
   selectedFilm.classList.remove("hidden");
   filmResults.innerHTML = "";
-  filmSearchStatus.textContent = "Film selected.";
+  filmSearchStatus.textContent = "Film selected with technical details.";
 }
 
 function selectVenue(place) {

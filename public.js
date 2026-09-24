@@ -11,6 +11,10 @@ function posterUrl(path) {
   return path ? `https://image.tmdb.org/t/p/w342${path}` : "";
 }
 
+function money(value) {
+  return value ? `$${Number(value).toLocaleString("en-US")}` : "Not listed";
+}
+
 function venueLabel(venue) {
   if (!venue || !venue.name) return "";
   const label = escapeHtml(venue.name);
@@ -36,12 +40,13 @@ function renderFeatured(post) {
     return;
   }
 
-  featuredPost.innerHTML = `<details class="featured-reader panel"><summary><span class="eyebrow">latest critic</span><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><h2>${escapeHtml(post.title)}</h2><span class="open-label">open critic</span></summary>${fullCritic(post)}</details>`;
+  featuredPost.innerHTML = `<details class="featured-reader panel"><summary>${post.film?.poster ? `<img class="preview-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="eyebrow">latest critic</span><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><h2>${escapeHtml(post.title)}</h2><span class="open-label">open critic</span></summary>${fullCritic(post)}</details>`;
 }
 
 function fullCritic(post) {
   const film = post.film || {};
-  return `<div class="critic-reading"><section class="film-information"><p class="eyebrow">the film</p>${film.poster ? `<img class="critic-poster" src="${escapeHtml(posterUrl(film.poster))}" alt="Poster for ${escapeHtml(post.movieTitle)}" />` : ""}<h3>${escapeHtml(post.movieTitle)}</h3><p>${escapeHtml(film.year || "")}</p>${film.overview ? `<p class="film-overview">${escapeHtml(film.overview)}</p>` : ""}<p class="meta-row">${escapeHtml(post.date)} · ${venueLabel(post.venue) || escapeHtml(post.context || "")}</p></section><section class="critic-text"><p class="eyebrow">the critic</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section></div>`;
+  const technical = `<div class="technical-grid"><span>Director<strong>${escapeHtml(film.director || "Not listed")}</strong></span><span>Main cast<strong>${escapeHtml((film.cast || []).join(", ") || "Not listed")}</strong></span><span>Runtime<strong>${film.runtime ? `${film.runtime} min` : "Not listed"}</strong></span><span>Budget<strong>${money(film.budget)}</strong></span><span>Genres<strong>${escapeHtml((film.genres || []).join(", ") || "Not listed")}</strong></span><span>Country<strong>${escapeHtml((film.countries || []).join(", ") || "Not listed")}</strong></span></div>`;
+  return `<div class="critic-reading"><section class="film-information"><p class="eyebrow">the film</p>${film.poster ? `<img class="critic-poster" src="${escapeHtml(film.poster)}" alt="Poster for ${escapeHtml(post.movieTitle)}" />` : ""}<h3>${escapeHtml(post.movieTitle)}</h3><p>${escapeHtml(film.year || "")}</p>${technical}<p class="meta-row">${escapeHtml(post.date)} · ${venueLabel(post.venue) || escapeHtml(post.context || "")}</p></section><section class="critic-text"><p class="eyebrow">the critic</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section></div>`;
 }
 
 function renderPosts(posts) {
@@ -53,7 +58,7 @@ function renderPosts(posts) {
   postsList.innerHTML = posts.map((post) => `
     <details class="post-card" data-id="${post.id}">
       <summary>
-        <span class="film-kicker">${escapeHtml(post.movieTitle)}</span>
+        ${post.film?.poster ? `<img class="card-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="film-kicker">${escapeHtml(post.movieTitle)}</span>
         <h3>${escapeHtml(post.title)}</h3>
         <span class="open-label">open critic</span>
       </summary>
