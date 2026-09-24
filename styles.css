@@ -654,6 +654,10 @@ input, textarea { color: var(--ink); background: #242323; border-color: var(--bo
 .venue-fields { display: grid; grid-template-columns: minmax(130px, .7fr) minmax(180px, 1fr) minmax(180px, 1fr); gap: 1rem; }
 .venue-fields select { width: 100%; padding: .8rem .9rem; color: var(--ink); background: #242323; border: 1px solid var(--border); border-radius: 0; }
 .venue-fields a, .meta-row a { color: var(--accent-strong); }
+.venue-results { display: grid; gap: .35rem; margin-top: .35rem; }
+.venue-result { display: grid; gap: .1rem; padding: .55rem .7rem; color: var(--ink); background: var(--screen); border: 1px solid var(--border); text-align: left; cursor: pointer; }
+.venue-result:hover, .venue-result:focus-visible { border-color: var(--accent); }
+.venue-result small { overflow: hidden; color: var(--muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 760px) {
   .admin-heading { align-items: flex-start; flex-direction: column; }

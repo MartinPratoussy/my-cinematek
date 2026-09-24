@@ -46,8 +46,7 @@
           <div class="film-picker">
             <label for="film-search">Find a film</label>
             <div class="search-row">
-              <input id="film-search" type="search" placeholder="Film title" autocomplete="off" />
-              <button id="film-search-button" class="secondary-btn" type="button">Search</button>
+              <input id="film-search" type="search" placeholder="Start typing a film title" autocomplete="off" />
             </div>
             <p id="film-search-status" class="field-hint" aria-live="polite"></p>
             <div id="film-results" class="film-results"></div>
@@ -73,8 +72,8 @@
                 <option value="home">My TV / home</option>
               </select>
             </label>
-            <label id="venue-name-field">Cinema name<input id="venue-name" type="text" placeholder="Cinema name" /></label>
-            <label id="venue-location-field">Location or map link<input id="venue-location" type="url" placeholder="https://maps.google.com/..." /><button id="venue-map-search" class="secondary-btn" type="button">Create map link</button></label>
+            <label id="venue-name-field">Cinema name<input id="venue-name" type="search" placeholder="Start typing a cinema name" autocomplete="off" /><div id="venue-results" class="venue-results"></div></label>
+            <input id="venue-location" type="hidden" />
           </div>
           <label>Viewing context<input id="context" type="text" placeholder="Optional note about the screening" /></label>
           <label>Your critic<textarea id="review-body" rows="12" placeholder="Write what stayed with you." required></textarea></label>

@@ -3,7 +3,7 @@ import os
 import sqlite3
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote_plus, urlparse
 from urllib.request import Request, urlopen
 
 TMDB_API_URL = "https://api.themoviedb.org/3/search/movie"
@@ -77,6 +77,8 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             return self.send_json(db.all_posts())
         if parsed.path == "/api/search":
             return self.search_tmdb(parse_qs(parsed.query).get("query", [""])[0].strip())
+        if parsed.path == "/api/places":
+            return self.search_places(parse_qs(parsed.query).get("query", [""])[0].strip())
         return super().do_GET()
 
     def do_POST(self):
@@ -125,6 +127,20 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             return self.send_json({"error": "TMDB returned an invalid or delayed response."}, 502)
         except Exception:
             return self.send_json({"error": "Film catalogue request failed on the server."}, 502)
+
+    def search_places(self, query):
+        if not query:
+            return self.send_json({"results": []})
+        request = Request(
+            f"https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=fr,de,be,lu,ch,gb&q={quote_plus(query + ' cinema')}",
+            headers={"User-Agent": "my-cinematek/1.0 contact@my-cinematek.local", "Accept": "application/json"},
+        )
+        try:
+            with urlopen(request, timeout=10) as response:
+                places = json.loads(response.read().decode("utf-8"))
+            return self.send_json({"results": [{"name": place.get("display_name", "").split(",")[0], "displayName": place.get("display_name", ""), "location": f"https://www.openstreetmap.org/?mlat={place.get('lat')}&mlon={place.get('lon')}#map=18/{place.get('lat')}/{place.get('lon')}"} for place in places]})
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+            return self.send_json({"error": "Cinema search is temporarily unavailable."}, 502)
 
     def send_json(self, payload, status=200):
         body = json.dumps(payload).encode("utf-8")

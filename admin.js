@@ -7,7 +7,6 @@ const editorStatus = document.getElementById("editor-status");
 const logoutButton = document.getElementById("logout");
 const form = document.getElementById("review-form");
 const filmSearch = document.getElementById("film-search");
-const filmSearchButton = document.getElementById("film-search-button");
 const filmSearchStatus = document.getElementById("film-search-status");
 const filmResults = document.getElementById("film-results");
 const selectedFilm = document.getElementById("selected-film");
@@ -19,14 +18,15 @@ const venueType = document.getElementById("venue-type");
 const venueName = document.getElementById("venue-name");
 const venueLocation = document.getElementById("venue-location");
 const venueNameField = document.getElementById("venue-name-field");
-const venueLocationField = document.getElementById("venue-location-field");
-const venueMapSearch = document.getElementById("venue-map-search");
+const venueResults = document.getElementById("venue-results");
 
 const TAG_PRESETS = ["horror", "drama", "comedy", "thriller", "romance", "science fiction", "animation", "documentary", "rewatch", "classic"];
 
 let authorSecret = "";
 let editingPostId = null;
 let selectedFilmData = null;
+let filmSearchTimer;
+let venueSearchTimer;
 
 function renderPresetTags() {
   presetTags.innerHTML = TAG_PRESETS.map((tag) => `<button type="button" class="preset-tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("");
@@ -42,7 +42,6 @@ function renderPresetTags() {
 function updateVenueFields() {
   const home = venueType.value === "home";
   venueNameField.classList.toggle("hidden", home);
-  venueLocationField.classList.toggle("hidden", home);
   if (home) {
     venueName.value = "My TV";
     venueLocation.value = "";
@@ -112,6 +111,14 @@ function selectFilm(film) {
   filmSearchStatus.textContent = "Film selected.";
 }
 
+function selectVenue(place) {
+  venueName.value = place.name;
+  venueLocation.value = place.location;
+  venueResults.innerHTML = "";
+  venueNameField.classList.remove("has-selection");
+  venueNameField.classList.add("has-selection");
+}
+
 async function searchFilms() {
   const query = filmSearch.value.trim();
   if (!query) return;
@@ -125,6 +132,20 @@ async function searchFilms() {
     filmSearchStatus.textContent = payload.results.length ? "Choose the film you watched." : "No films found.";
   } catch (error) {
     filmSearchStatus.textContent = error.message;
+  }
+}
+
+async function searchVenues() {
+  const query = venueName.value.trim();
+  if (query.length < 3 || venueType.value === "home") return;
+  try {
+    const response = await fetch(`/api/places?query=${encodeURIComponent(query)}`);
+    const payload = await readJson(response);
+    if (!response.ok) throw new Error(payload.error || "Cinema search unavailable.");
+    venueResults.innerHTML = payload.results.map((place) => `<button type="button" class="venue-result" data-place='${escapeHtml(JSON.stringify(place))}'><strong>${escapeHtml(place.name)}</strong><small>${escapeHtml(place.displayName)}</small></button>`).join("");
+    venueResults.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => selectVenue(JSON.parse(button.dataset.place))));
+  } catch (error) {
+    venueResults.innerHTML = `<span class="field-hint">${escapeHtml(error.message)}</span>`;
   }
 }
 
@@ -175,8 +196,15 @@ logoutButton.addEventListener("click", () => {
   resetForm();
 });
 
-filmSearchButton.addEventListener("click", searchFilms);
-filmSearch.addEventListener("keydown", (event) => { if (event.key === "Enter") searchFilms(); });
+filmSearch.addEventListener("input", () => {
+  clearTimeout(filmSearchTimer);
+  filmSearchTimer = setTimeout(searchFilms, 300);
+});
+venueName.addEventListener("input", () => {
+  venueLocation.value = "";
+  clearTimeout(venueSearchTimer);
+  venueSearchTimer = setTimeout(searchVenues, 350);
+});
 cancelEdit.addEventListener("click", resetForm);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -191,9 +219,5 @@ form.addEventListener("submit", async (event) => {
 });
 
 venueType.addEventListener("change", updateVenueFields);
-venueMapSearch.addEventListener("click", () => {
-  const query = venueName.value.trim();
-  if (query) venueLocation.value = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-});
 renderPresetTags();
 updateVenueFields();
