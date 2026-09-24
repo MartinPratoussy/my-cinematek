@@ -54,6 +54,21 @@ textarea {
   border-bottom: 1px solid var(--border);
 }
 
+
+/* Give the recent-watch shelf room to breathe on desktop. */
+.diary-layout { grid-template-columns: minmax(0, 1fr) minmax(350px, 390px); gap: 2.5rem; }
+.watched-shelf { padding: 1.6rem; }
+.watched-item { grid-template-columns: 58px minmax(0, 1fr); gap: 1rem; min-height: 96px; padding: .85rem 0; }
+.watched-item img { width: 58px; height: 84px; }
+.watched-item p, .watched-note { max-width: none; }
+@media (max-width: 900px) {
+  .diary-layout { grid-template-columns: minmax(0, 1fr) 320px; gap: 1.25rem; }
+}
+@media (max-width: 760px) {
+  .diary-layout { grid-template-columns: 1fr; }
+  .watched-item { grid-template-columns: 52px minmax(0, 1fr); }
+  .watched-item img { width: 52px; height: 76px; }
+}
 .nav-wrap {
   display: flex;
   justify-content: space-between;
@@ -867,4 +882,19 @@ body.modal-open { overflow: hidden; }
   .critic-conclusion { grid-template-columns: 1fr auto; padding: 1rem; }
   .rating { font-size: 2.5rem; }
   .watched-list { grid-template-columns: 1fr; }
+}
+
+/* Final desktop sizing for the recent-watch side panel. */
+.diary-layout { grid-template-columns: minmax(0, 1fr) minmax(350px, 390px); gap: 2.5rem; }
+.watched-shelf { padding: 1.6rem; }
+.watched-item { grid-template-columns: 58px minmax(0, 1fr); gap: 1rem; min-height: 96px; padding: .85rem 0; }
+.watched-item img { width: 58px; height: 84px; }
+.watched-item p, .watched-note { max-width: none; }
+@media (max-width: 900px) {
+  .diary-layout { grid-template-columns: minmax(0, 1fr) 320px; gap: 1.25rem; }
+}
+@media (max-width: 760px) {
+  .diary-layout { grid-template-columns: 1fr; }
+  .watched-item { grid-template-columns: 52px minmax(0, 1fr); }
+  .watched-item img { width: 52px; height: 76px; }
 }
