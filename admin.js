@@ -164,6 +164,7 @@ function editPost(post) {
   venueLocation.value = post.venue?.location || "";
   updateVenueFields();
   document.getElementById("review-body").value = post.body;
+  document.getElementById("conclusion").value = post.conclusion || "";
   selectedFilm.innerHTML = `${selectedFilmData.poster ? `<img src="${escapeHtml(selectedFilmData.poster)}" alt="" />` : ""}<div><p class="eyebrow">selected film</p><h3>${escapeHtml(post.movieTitle)}</h3><p>${escapeHtml(selectedFilmData.year || "")}</p></div>`;
   selectedFilm.classList.remove("hidden");
   document.getElementById("publish-button").textContent = "Save changes";
@@ -209,8 +210,8 @@ cancelEdit.addEventListener("click", resetForm);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const savedFilm = selectedFilmData || (filmData.value ? JSON.parse(filmData.value) : null);
-  const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), venue: { type: venueType.value, name: venueType.value === "home" ? "My TV" : venueName.value.trim(), location: venueType.value === "home" ? "" : venueLocation.value.trim() }, tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), film: savedFilm };
-  if (!post.title || !post.movieTitle || !post.date || !post.body || !savedFilm?.title) { editorStatus.textContent = "Choose a film and complete the critic first."; return; }
+  const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), venue: { type: venueType.value, name: venueType.value === "home" ? "My TV" : venueName.value.trim(), location: venueType.value === "home" ? "" : venueLocation.value.trim() }, tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), conclusion: document.getElementById("conclusion").value.trim(), film: savedFilm };
+  if (!post.title || !post.movieTitle || !post.date || !post.body || !post.conclusion || !savedFilm?.title) { editorStatus.textContent = "Choose a film and complete the critic first."; return; }
   const response = await fetch(editingPostId ? `/api/posts/${editingPostId}` : "/api/posts", { method: editingPostId ? "PUT" : "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify(post) });
   if (!response.ok) { editorStatus.textContent = "The critic could not be saved."; return; }
   resetForm();

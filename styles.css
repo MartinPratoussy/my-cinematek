@@ -670,3 +670,24 @@ input, textarea { color: var(--ink); background: #242323; border-color: var(--bo
   .site-header { background-color: rgba(17, 19, 21, .9) !important; }
   .panel, .post-card { background-color: #201f1e !important; color: #f3eadb !important; }
 }
+
+.featured-reader, .post-card { cursor: pointer; }
+.featured-reader summary, .post-card summary { list-style: none; }
+.featured-reader summary::-webkit-details-marker, .post-card summary::-webkit-details-marker { display: none; }
+.featured-reader summary { min-height: 300px; padding: clamp(1.5rem, 4vw, 3rem); }
+.featured-reader h2 { margin: .5rem 0 1rem; }
+.film-kicker { display: block; margin: .7rem 0; color: var(--accent-strong); font-family: Georgia, "Times New Roman", serif; font-size: 1.25rem; }
+.open-label { display: block; margin-top: 1.4rem; color: var(--accent); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; }
+.open-label::before { content: "+ "; }
+.featured-reader[open] .open-label::before, .post-card[open] .open-label::before { content: "- "; }
+.post-card summary::after { display: none; content: none; }
+.critic-reading { display: grid; gap: 2.5rem; padding: 0 clamp(1.5rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem); border-top: 1px solid var(--border); }
+.film-information { padding-top: 1.5rem; }
+.film-information h3 { margin: .8rem 0 0; font-family: Georgia, "Times New Roman", serif; font-size: 2rem; font-weight: 400; }
+.film-information > p { color: var(--ink-soft); }
+.critic-poster { width: 120px; aspect-ratio: 2 / 3; object-fit: cover; float: right; margin: 0 0 1rem 2rem; }
+.film-overview { max-width: 650px; font-family: Georgia, "Times New Roman", serif; }
+.critic-text, .critic-conclusion { max-width: 760px; }
+.critic-conclusion { padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.rating { display: block; margin-top: 1.5rem; color: var(--accent-light, var(--accent)); font-family: Georgia, "Times New Roman", serif; font-size: 3rem; font-weight: 400; }
+.rating small { margin-left: .2rem; color: var(--muted); font-size: 1rem; }

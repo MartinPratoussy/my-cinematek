@@ -41,17 +41,21 @@ class Database:
 
     def init_schema(self):
         identity = "SERIAL PRIMARY KEY" if self.postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
-        self.query(f"CREATE TABLE IF NOT EXISTS posts (id {identity}, title TEXT NOT NULL, movie_title TEXT NOT NULL, watched_date TEXT NOT NULL, rating REAL NOT NULL, context TEXT, venue TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL, body TEXT NOT NULL, film TEXT NOT NULL)")
+        self.query(f"CREATE TABLE IF NOT EXISTS posts (id {identity}, title TEXT NOT NULL, movie_title TEXT NOT NULL, watched_date TEXT NOT NULL, rating REAL NOT NULL, context TEXT, venue TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL, body TEXT NOT NULL, conclusion TEXT NOT NULL DEFAULT '', film TEXT NOT NULL)")
         try:
             self.query("ALTER TABLE posts ADD COLUMN venue TEXT NOT NULL DEFAULT ''")
         except Exception:
             pass
+        try:
+            self.query("ALTER TABLE posts ADD COLUMN conclusion TEXT NOT NULL DEFAULT ''")
+        except Exception:
+            pass
     def insert_post(self, post):
-        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], json.dumps(post.get("film", {})))
+        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})))
         if self.postgres:
-            return self.query("INSERT INTO posts (title, movie_title, watched_date, rating, context, venue, tags, body, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id", values, True)[0][0]
+            return self.query("INSERT INTO posts (title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id", values, True)[0][0]
         cursor = self.connection.cursor()
-        cursor.execute("INSERT INTO posts (title, movie_title, watched_date, rating, context, venue, tags, body, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", values)
+        cursor.execute("INSERT INTO posts (title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", values)
         post_id = cursor.lastrowid
         self.connection.commit()
         cursor.close()
@@ -59,19 +63,19 @@ class Database:
 
     @staticmethod
     def serialize(row):
-        return {"id": row[0], "title": row[1], "movieTitle": row[2], "date": row[3], "rating": row[4], "context": row[5], "venue": json.loads(row[6] or "{}"), "tags": json.loads(row[7]), "body": row[8], "film": json.loads(row[9])}
+        return {"id": row[0], "title": row[1], "movieTitle": row[2], "date": row[3], "rating": row[4], "context": row[5], "venue": json.loads(row[6] or "{}"), "tags": json.loads(row[7]), "body": row[8], "conclusion": row[9], "film": json.loads(row[10])}
 
     def all_posts(self):
-        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, film FROM posts ORDER BY watched_date DESC", fetch=True)
+        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film FROM posts ORDER BY watched_date DESC", fetch=True)
         return [self.serialize(row) for row in rows]
 
     def get_post(self, post_id):
-        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, film FROM posts WHERE id = ?", (post_id,), True)
+        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film FROM posts WHERE id = ?", (post_id,), True)
         return self.serialize(rows[0]) if rows else None
 
     def update_post(self, post_id, post):
-        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], json.dumps(post.get("film", {})), post_id)
-        self.query("UPDATE posts SET title = ?, movie_title = ?, watched_date = ?, rating = ?, context = ?, venue = ?, tags = ?, body = ?, film = ? WHERE id = ?", values)
+        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})), post_id)
+        self.query("UPDATE posts SET title = ?, movie_title = ?, watched_date = ?, rating = ?, context = ?, venue = ?, tags = ?, body = ?, conclusion = ?, film = ? WHERE id = ?", values)
 
 
 db = Database()

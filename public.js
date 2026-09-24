@@ -36,16 +36,12 @@ function renderFeatured(post) {
     return;
   }
 
-  featuredPost.innerHTML = `
-    <div class="featured-copy">
-      <div class="meta-row post-meta"><span>latest critic</span><span>${escapeHtml(post.date)}</span><span>${venueLabel(post.venue) || escapeHtml(post.context || "review")}</span></div>
-      <p class="film-kicker">${escapeHtml(post.movieTitle)} · ★ ${Number(post.rating).toFixed(1)}</p>
-      <h2>${escapeHtml(post.title)}</h2>
-      <div class="meta-row post-meta">${(post.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
-      <div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div>
-    </div>
-    ${post.film?.poster ? `<img class="featured-poster" src="${escapeHtml(posterUrl(post.film.poster))}" alt="Poster for ${escapeHtml(post.movieTitle)}" />` : ""}
-  `;
+  featuredPost.innerHTML = `<details class="featured-reader panel"><summary><span class="eyebrow">latest critic</span><span class="film-kicker">${escapeHtml(post.movieTitle)}</span><h2>${escapeHtml(post.title)}</h2><span class="open-label">open critic</span></summary>${fullCritic(post)}</details>`;
+}
+
+function fullCritic(post) {
+  const film = post.film || {};
+  return `<div class="critic-reading"><section class="film-information"><p class="eyebrow">the film</p>${film.poster ? `<img class="critic-poster" src="${escapeHtml(posterUrl(film.poster))}" alt="Poster for ${escapeHtml(post.movieTitle)}" />` : ""}<h3>${escapeHtml(post.movieTitle)}</h3><p>${escapeHtml(film.year || "")}</p>${film.overview ? `<p class="film-overview">${escapeHtml(film.overview)}</p>` : ""}<p class="meta-row">${escapeHtml(post.date)} · ${venueLabel(post.venue) || escapeHtml(post.context || "")}</p></section><section class="critic-text"><p class="eyebrow">the critic</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section></div>`;
 }
 
 function renderPosts(posts) {
@@ -57,12 +53,11 @@ function renderPosts(posts) {
   postsList.innerHTML = posts.map((post) => `
     <details class="post-card" data-id="${post.id}">
       <summary>
-        <div class="meta-row"><span>${escapeHtml(post.date)}</span><span>${venueLabel(post.venue) || escapeHtml(post.context || "review")}</span></div>
+        <span class="film-kicker">${escapeHtml(post.movieTitle)}</span>
         <h3>${escapeHtml(post.title)}</h3>
-        <div class="meta-row"><span>${escapeHtml(post.movieTitle)}</span><span>★ ${Number(post.rating).toFixed(1)}</span></div>
-        <p>${escapeHtml((post.body || "").split("\n")[0]).slice(0, 140)}${(post.body || "").length > 140 ? "..." : ""}</p>
+        <span class="open-label">open critic</span>
       </summary>
-      <div class="diary-entry">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div>
+      ${fullCritic(post)}
     </details>
   `).join("");
 
