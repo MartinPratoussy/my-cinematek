@@ -98,7 +98,8 @@
             <label>Rating<input id="watched-rating" type="number" min="0" max="10" step="0.5" placeholder="Optional" /></label>
           </div>
           <label class="checkbox-field"><input id="watched-rewatch" type="checkbox" /> Rewatch</label>
-          <label id="watched-venue-name-field">Cinema name<input id="watched-venue-name" type="text" /></label>
+          <label id="watched-venue-name-field">Cinema name<input id="watched-venue-name" type="search" autocomplete="off" /><div id="watched-venue-results" class="venue-results"></div></label>
+          <input id="watched-venue-location" type="hidden" />
           <label>Short note<textarea id="watched-note" rows="3" maxlength="240" placeholder="A quick thought, not a full critic."></textarea></label>
           <button class="secondary-btn" type="submit">Add to recent watches</button>
           <p id="watched-status" class="field-hint" aria-live="polite"></p>
