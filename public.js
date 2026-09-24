@@ -148,8 +148,10 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape" && 
 let postOffset = 0;
 loadPosts().then((posts) => {
   postOffset = posts.length;
-  if (posts[0]) renderFeaturedReview(posts[0]);
-  renderDiary(posts);
+  const featuredPost = posts[0];
+  const diaryPosts = posts.slice(1);
+  if (featuredPost) renderFeaturedReview(featuredPost);
+  renderDiary(diaryPosts);
   loadMorePosts.hidden = posts.length < 8;
   return loadWatched(0, 8);
 }).then((items) => {
