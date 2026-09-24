@@ -638,7 +638,7 @@ body::before {
   letter-spacing: -0.025em;
 }
 
-.brand::before { content: "✦ "; color: var(--accent); font-size: 0.8em; }
+.brand::before { content: "🎬 "; font-size: 0.78em; }
 .main-nav a:hover, .main-nav a:focus-visible { color: var(--accent-strong); }
 .eyebrow { color: var(--accent); letter-spacing: 0.2em; }
 .hero { max-width: 780px; padding: 5rem 0 4rem; }
