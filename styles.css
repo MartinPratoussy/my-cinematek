@@ -622,6 +622,8 @@ body::before {
 .watched-item span { margin-top: .2rem; color: var(--muted); font-size: .68rem; }
 .watched-item em { color: var(--accent); font-family: "Trebuchet MS", sans-serif; font-size: .58rem; font-style: normal; letter-spacing: .08em; text-transform: uppercase; }
 .watched-item p { max-width: 210px; margin: .25rem 0 0; overflow: hidden; color: var(--ink-soft); font-size: .76rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.watched-note { display: grid; gap: .12rem; max-width: 210px; margin: .35rem 0 0; color: var(--ink-soft); font-size: .78rem; line-height: 1.35; white-space: normal; }
+.watched-note small { color: var(--accent); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; }
 .watched-form { margin-top: 1.5rem; }
 .checkbox-field { display: flex; flex-direction: row; align-items: center; gap: .55rem; }
 .checkbox-field input { width: auto; }

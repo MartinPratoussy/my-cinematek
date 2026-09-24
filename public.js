@@ -42,7 +42,7 @@ function renderDiary(posts, append = false) {
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
 }
 function renderWatched(items) {
-  watchedList.innerHTML = items.length ? items.map((item) => `<div class="watched-item">${item.film?.poster ? `<img src="${escapeHtml(item.film.poster)}" alt="" />` : ""}<div><strong>${escapeHtml(item.film?.title || "Untitled film")}${item.rewatch ? ' <em>rewatch</em>' : ""}</strong><span>${escapeHtml(item.date)} · ${venueLabel(item.venue) || "watch"}${item.rating !== null && item.rating !== undefined ? ` · ★ ${Number(item.rating).toFixed(1)}` : ""}</span>${item.note ? `<p>${escapeHtml(item.note)}</p>` : ""}</div></div>`).join("") : '<p class="empty-state">No unwritten screenings yet.</p>';
+  watchedList.innerHTML = items.length ? items.map((item) => `<div class="watched-item">${item.film?.poster ? `<img src="${escapeHtml(item.film.poster)}" alt="" />` : ""}<div><strong>${escapeHtml(item.film?.title || "Untitled film")}${item.rewatch ? ' <em>rewatch</em>' : ""}</strong><span>${escapeHtml(item.date)} · ${venueLabel(item.venue) || "watch"}${item.rating !== null && item.rating !== undefined ? ` · ★ ${Number(item.rating).toFixed(1)}` : ""}</span>${item.note ? `<p class="watched-note"><small>quick note</small>${escapeHtml(item.note)}</p>` : ""}</div></div>`).join("") : '<p class="empty-state">No unwritten screenings yet.</p>';
 }
 document.querySelectorAll("[data-close-modal]").forEach((element) => element.addEventListener("click", closeModal));
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
