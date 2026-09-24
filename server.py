@@ -16,7 +16,9 @@ class Database:
             raise RuntimeError("DATABASE_URL is required on Render.")
         if self.postgres:
             import psycopg
-            self.connection = psycopg.connect(os.environ["DATABASE_URL"])
+            print("Connecting to PostgreSQL...", flush=True)
+            self.connection = psycopg.connect(os.environ["DATABASE_URL"], connect_timeout=10)
+            print("PostgreSQL connected.", flush=True)
         else:
             self.connection = sqlite3.connect(os.environ.get("SQLITE_PATH", DEFAULT_DB), check_same_thread=False)
         self.init_schema()
@@ -37,6 +39,7 @@ class Database:
             cursor.close()
 
     def init_schema(self):
+        print("Checking database schema...", flush=True)
         identity = "SERIAL PRIMARY KEY" if self.postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
         self.query(f"CREATE TABLE IF NOT EXISTS posts (id {identity}, title TEXT NOT NULL, movie_title TEXT NOT NULL, watched_date TEXT NOT NULL, rating REAL NOT NULL, context TEXT, venue TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL, body TEXT NOT NULL, conclusion TEXT NOT NULL DEFAULT '', film TEXT NOT NULL)")
         for column, definition in (("venue", "TEXT NOT NULL DEFAULT ''"), ("conclusion", "TEXT NOT NULL DEFAULT ''")):
@@ -44,6 +47,7 @@ class Database:
                 self.query(f"ALTER TABLE posts ADD COLUMN {column} {definition}")
             except Exception:
                 pass
+        print("Database schema ready.", flush=True)
 
     def insert_post(self, post):
         values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})))
@@ -140,4 +144,6 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 if __name__ == "__main__":
-    ThreadingHTTPServer(("", int(os.environ.get("PORT", "8000"))), CinematekHandler).serve_forever()
+    port = int(os.environ.get("PORT", "8000"))
+    print(f"Starting my-cinematek on port {port}...", flush=True)
+    ThreadingHTTPServer(("", port), CinematekHandler).serve_forever()
