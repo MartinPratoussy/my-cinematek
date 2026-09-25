@@ -142,6 +142,10 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             limit = min(max(int(parse_qs(parsed.query).get("limit", [8])[0]), 1), 50)
             offset = max(int(parse_qs(parsed.query).get("offset", [0])[0]), 0)
             return self.send_json(db.all_posts(limit, offset))
+            if parsed.path.startswith("/api/posts/"):
+                post_id = int(parsed.path.rsplit("/", 1)[-1])
+                post = db.get_post(post_id)
+                return self.send_json(post if post else {"error": "Critique introuvable."}, 200 if post else 404)
         if parsed.path == "/api/watched":
             params = parse_qs(parsed.query)
             limit = min(max(int(params.get("limit", [8])[0]), 1), 50)

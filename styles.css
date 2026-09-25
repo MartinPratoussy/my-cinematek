@@ -2450,6 +2450,54 @@ body.modal-open {
     background: linear-gradient(110deg, rgba(212, 154, 87, .13), rgba(32, 31, 30, .7));
 }
 
+.critic-share {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .8rem 1rem;
+    margin-top: 1.4rem;
+}
+
+.share-button {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .7rem 1rem;
+    color: #f4e9db;
+    background: rgba(112, 35, 46, .35);
+    border: 1px solid #87404a;
+    cursor: pointer;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.share-button span {
+    color: #f0ad72;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.share-button:hover,
+.share-button:focus-visible {
+    background: #9e4652;
+    border-color: #d58d55;
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.share-button:disabled {
+    cursor: wait;
+    opacity: .6;
+    transform: none;
+}
+
+.share-status {
+    color: #c3a59d;
+    font-size: .74rem;
+}
+
 .critic-conclusion .eyebrow,
 .critic-conclusion .post-body {
     grid-column: 1;
