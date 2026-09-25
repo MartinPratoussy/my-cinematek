@@ -137,6 +137,9 @@ class Database:
         self.query("UPDATE watched_films SET watched_date = ?, venue = ?, rating = ?, note = ?, rewatch = ?, film = ?, source_url = ? WHERE id = ?", values)
         print("Database schema ready.", flush=True)
 
+    def delete_watched(self, item_id):
+        self.query("DELETE FROM watched_films WHERE id = ?", (item_id,))
+
     def insert_post(self, post):
         values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})))
         statement = "INSERT INTO posts (title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -168,6 +171,9 @@ class Database:
     def update_post(self, post_id, post):
         values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})), post_id)
         self.query("UPDATE posts SET title = ?, movie_title = ?, watched_date = ?, rating = ?, context = ?, venue = ?, tags = ?, body = ?, conclusion = ?, film = ? WHERE id = ?", values)
+
+    def delete_post(self, post_id):
+        self.query("DELETE FROM posts WHERE id = ?", (post_id,))
 
 db = Database()
 
@@ -234,6 +240,21 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         post_id = int(path.rsplit("/", 1)[-1])
         db.update_post(post_id, self.read_json())
         return self.send_json(db.get_post(post_id))
+
+    def do_DELETE(self):
+        path = urlparse(self.path).path
+        if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
+        try:
+            item_id = int(path.rsplit("/", 1)[-1])
+        except ValueError:
+            return self.send_json({"error": "Invalid entry ID."}, 400)
+        if path.startswith("/api/watched/"):
+            db.delete_watched(item_id)
+            return self.send_json({"id": item_id})
+        if path.startswith("/api/posts/"):
+            db.delete_post(item_id)
+            return self.send_json({"id": item_id})
+        return self.send_json({"error": "Not found."}, 404)
 
     def authorized(self): return self.headers.get("X-Author-Password") == os.environ.get("AUTHOR_PASSWORD", "cinematek")
     def read_json(self): return json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8"))

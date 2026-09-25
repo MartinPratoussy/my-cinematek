@@ -1587,6 +1587,31 @@ textarea {
     border-radius: 0;
 }
 
+.admin-entry-actions {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.admin-main .danger-btn {
+    padding: .75rem 1rem;
+    color: #e09a8b;
+    background: transparent;
+    border: 1px solid #713743;
+    border-radius: 0;
+    cursor: pointer;
+}
+
+.admin-main .danger-btn:hover,
+.admin-main .danger-btn:focus-visible {
+    color: #fff0e5;
+    background: #713743;
+    border-color: #d58d55;
+    outline: none;
+}
+
 .admin-posts {
     padding: 4rem 0;
 }

@@ -242,8 +242,11 @@ function editPost(post) {
 
 async function loadAdminPosts() {
   const posts = await loadPosts();
-  adminPostList.innerHTML = posts.length ? posts.map((post) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(post.date)}</p><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.movieTitle)}</p></div><button type="button" class="secondary-btn" data-id="${post.id}">Modifier</button></article>`).join("") : '<p class="empty-state">Aucune critique publiée.</p>';
-  adminPostList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => editPost((await loadPosts()).find((post) => post.id === Number(button.dataset.id)))));
+  adminPostList.innerHTML = posts.length ? posts.map((post) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(post.date)}</p><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.movieTitle)}</p></div><div class="admin-entry-actions"><button type="button" class="secondary-btn" data-action="edit" data-id="${post.id}">Modifier</button><button type="button" class="danger-btn" data-action="delete" data-id="${post.id}">Supprimer</button></div></article>`).join("") : '<p class="empty-state">Aucune critique publiée.</p>';
+  adminPostList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => {
+    if (button.dataset.action === "delete") return deleteEntry(`/api/posts/${button.dataset.id}`, `Supprimer la critique « ${button.closest(".admin-post").querySelector("h3").textContent} » ?`, loadAdminPosts);
+    editPost((await loadPosts()).find((post) => post.id === Number(button.dataset.id)));
+  }));
 }
 
 function renderWatchedAdmin(items) {
@@ -253,9 +256,10 @@ function renderWatchedAdmin(items) {
     return haystack.includes(query);
   });
 
-  watchedAdminList.innerHTML = filteredItems.length ? filteredItems.map((item) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(item.date)}${item.rewatch ? " · revu" : ""}</p><h3>${escapeHtml(item.film?.title || "Film sans titre")}</h3><p>${item.rating == null ? "Sans note" : `★ ${Number(item.rating).toFixed(1)}`} ${item.note ? `· ${escapeHtml(item.note)}` : ""}</p></div><button type="button" class="secondary-btn" data-watched-id="${item.id}">Modifier</button></article>`).join("") : '<p class="empty-state">Aucun visionnage trouvé dans cette page.</p>';
+  watchedAdminList.innerHTML = filteredItems.length ? filteredItems.map((item) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(item.date)}${item.rewatch ? " · revu" : ""}</p><h3>${escapeHtml(item.film?.title || "Film sans titre")}</h3><p>${item.rating == null ? "Sans note" : `★ ${Number(item.rating).toFixed(1)}`} ${item.note ? `· ${escapeHtml(item.note)}` : ""}</p></div><div class="admin-entry-actions"><button type="button" class="secondary-btn" data-action="edit" data-watched-id="${item.id}">Modifier</button><button type="button" class="danger-btn" data-action="delete" data-watched-id="${item.id}">Supprimer</button></div></article>`).join("") : '<p class="empty-state">Aucun visionnage trouvé dans cette page.</p>';
 
   watchedAdminList.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => {
+    if (button.dataset.action === "delete") return deleteEntry(`/api/watched/${button.dataset.watchedId}`, `Supprimer « ${button.closest(".admin-post").querySelector("h3").textContent} » ?`, () => loadWatchedAdmin(watchedAdminPage));
     const item = watchedAdminCurrentItems.find((entry) => entry.id === Number(button.dataset.watchedId));
     if (!item) return;
     editingWatchedId = item.id;
@@ -273,6 +277,17 @@ function renderWatchedAdmin(items) {
     watchedForm.querySelector("button[type='submit']").textContent = "Enregistrer le visionnage";
     window.scrollTo({ top: watchedForm.offsetTop - 20, behavior: "smooth" });
   }));
+}
+
+async function deleteEntry(url, message, refresh) {
+  if (!window.confirm(message)) return;
+  const response = await fetch(url, { method: "DELETE", headers: { "X-Author-Password": authorSecret } });
+  if (!response.ok) {
+    editorStatus.textContent = "L’entrée n’a pas pu être supprimée.";
+    return;
+  }
+  await refresh();
+  editorStatus.textContent = "Entrée supprimée.";
 }
 
 async function loadWatchedAdmin(page = 0) {
