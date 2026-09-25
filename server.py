@@ -16,6 +16,7 @@ DEFAULT_DB = os.path.join(os.environ.get("LOCALAPPDATA", os.path.dirname(__file_
 
 def normalized_title(value):
     plain = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode().lower()
+    plain = re.sub(r"(?:\s*[,(-]\s*|\s+)\d{4}\)?\s*$", "", plain)
     return "".join(character for character in plain if character.isalnum())
 
 class Database:

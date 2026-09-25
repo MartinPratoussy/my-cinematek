@@ -70,19 +70,22 @@ function filmDetailsMarkup(film) {
   return `<div class="film-details"><div class="film-details-heading">${film.poster ? `<img class="film-details-poster" src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(film.title)}" />` : ""}<div><p class="eyebrow">détails du film</p><h2 id="film-modal-title">${escapeHtml(film.title || "Film")}</h2>${film.tagline ? `<p class="film-tagline">${escapeHtml(film.tagline)}</p>` : ""}</div></div>${technicalFacts(film)}${film.overview ? `<section class="film-overview-block"><p class="eyebrow">synopsis</p><p>${escapeHtml(film.overview)}</p></section>` : ""}${film.homepage ? `<a class="venue-map-button film-homepage" href="${escapeHtml(film.homepage)}" target="_blank" rel="noreferrer">Voir la fiche officielle</a>` : ""}</div>`;
 }
 async function openFilmModal(film) {
-  let details = film;
-  if (film?.id) {
-    try {
-      const response = await fetch(`/api/movie?id=${film.id}`);
-      if (response.ok) details = { ...film, ...(await response.json()) };
-    } catch { /* Keep the stored film data as a fallback. */ }
-  }
+  const details = await loadFilmDetails(film);
   filmModalContent.innerHTML = filmDetailsMarkup(details || {});
   filmModal.hidden = false;
   document.body.classList.add("modal-open");
   filmModal.querySelector(".modal-close").focus();
 }
 function closeFilmModal() { filmModal.hidden = true; if (modal.hidden) document.body.classList.remove("modal-open"); }
+
+async function loadFilmDetails(film) {
+  if (!film?.id) return film;
+  try {
+    const response = await fetch(`/api/movie?id=${film.id}`);
+    if (response.ok) return { ...film, ...(await response.json()) };
+  } catch { /* Keep the stored film data as a fallback. */ }
+  return film;
+}
 
 function viewingContextMarkup(post) {
   const place = venueButton(post.venue) || escapeHtml(post.context || "Chez soi");
@@ -211,7 +214,28 @@ function criticMarkup(post) {
   const film = post.film || {};
   return `<section class="film-information"><p class="eyebrow">le film</p><div class="modal-film-heading">${film.poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(post.movieTitle)}" /></button>` : ""}<div><h2 id="modal-title">${escapeHtml(post.movieTitle)}</h2><p>${escapeHtml(film.year || "")}</p></div></div>${technicalFacts(film)}</section>${viewingContextMarkup(post)}<section class="critic-text"><p class="eyebrow">la critique</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
 }
-function openModal(post) { modalContent.innerHTML = criticMarkup(post); modal.hidden = false; document.body.classList.add("modal-open"); modal.querySelector(".modal-close").focus(); modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle })); const shareButton = modalContent.querySelector(".share-button"); shareButton?.addEventListener("click", () => shareCritic(post, shareButton, modalContent.querySelector(".share-status"))); }
+function bindCriticModal(post) {
+  modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle }));
+  const shareButton = modalContent.querySelector(".share-button");
+  shareButton?.addEventListener("click", () => shareCritic(post, shareButton, modalContent.querySelector(".share-status")));
+}
+function openModal(post) {
+  modal.dataset.postId = String(post.id);
+  modalContent.innerHTML = criticMarkup(post);
+  modal.hidden = false;
+  document.body.classList.add("modal-open");
+  modal.querySelector(".modal-close").focus();
+  bindCriticModal(post);
+  if (post.film?.id && !post.film.director) {
+    loadFilmDetails(post.film).then((film) => {
+      if (film !== post.film && modal.dataset.postId === String(post.id) && !modal.hidden) {
+        const enrichedPost = { ...post, film };
+        modalContent.innerHTML = criticMarkup(enrichedPost);
+        bindCriticModal(enrichedPost);
+      }
+    });
+  }
+}
 function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
 function truncateText(value = "", maxLength = 180) {
   const text = String(value).replace(/\s+/g, " ").trim();
