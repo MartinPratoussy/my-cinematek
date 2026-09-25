@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>my-cinematek</title>
     <meta name="description" content="Un journal personnel de films vus au cinéma ou chez soi." />
-    <link rel="stylesheet" href="styles.css?v=20260925-05" />
+    <link rel="stylesheet" href="styles.css?v=20260925-06" />
 </head>
 
 <body>
@@ -28,8 +28,11 @@
                     <h2>Critiques</h2>
                 </div>
                 <div id="posts-list" class="post-list" aria-live="polite"></div>
-                <button id="load-more-posts" class="secondary-btn load-more" type="button" hidden>Charger plus de
-                    critiques</button>
+                <div id="critic-pagination" class="critic-pagination" hidden>
+                    <button id="previous-posts" class="secondary-btn" type="button" disabled>Précédente</button>
+                    <span id="posts-page-label">Page 1</span>
+                    <button id="next-posts" class="secondary-btn" type="button" disabled>Suivante</button>
+                </div>
             </section>
 
             <aside id="watched-shelf" class="watched-shelf" aria-labelledby="watched-title">
@@ -61,7 +64,7 @@
         </article>
     </div>
 
-    <script src="public.js?v=20260925-02"></script>
+    <script src="public.js?v=20260925-03"></script>
 </body>
 
 </html>

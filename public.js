@@ -1,5 +1,8 @@
 const postsList = document.getElementById("posts-list");
-const loadMorePosts = document.getElementById("load-more-posts");
+const criticPagination = document.getElementById("critic-pagination");
+const previousPosts = document.getElementById("previous-posts");
+const nextPosts = document.getElementById("next-posts");
+const postsPageLabel = document.getElementById("posts-page-label");
 const watchedList = document.getElementById("watched-list");
 const modal = document.getElementById("critic-modal");
 const modalContent = document.getElementById("modal-content");
@@ -12,6 +15,10 @@ let watchedOffset = 0;
 let watchedLoading = false;
 let hasMoreWatched = true;
 let watchedObserver = null;
+let criticPage = 1;
+let criticHasNextPage = false;
+let criticLoading = false;
+const CRITICS_PER_PAGE = 6;
 
 function escapeHtml(value = "") {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
@@ -35,8 +42,8 @@ function venueButton(venue) {
     : label;
 }
 function sortPosts(posts) { return [...posts].sort((a, b) => new Date(b.date) - new Date(a.date)); }
-async function loadPosts(offset = 0) {
-  const response = await fetch(`/api/posts?limit=8&offset=${offset}&fresh=${Date.now()}`, { cache: "no-store" });
+async function loadPosts(offset = 0, limit = CRITICS_PER_PAGE) {
+  const response = await fetch(`/api/posts?limit=${limit}&offset=${offset}&fresh=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Les critiques n’ont pas pu être chargées.");
   const text = await response.text();
   if (!text.trim()) throw new Error("L’archive des critiques a renvoyé une réponse vide.");
@@ -310,41 +317,44 @@ async function loadMoreWatched() {
 document.querySelectorAll("[data-close-modal]").forEach((element) => element.addEventListener("click", closeModal));
 document.querySelectorAll("[data-close-film-modal]").forEach((element) => element.addEventListener("click", closeFilmModal));
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
-let postOffset = 0;
-loadPosts().then((posts) => {
-  postOffset = posts.length;
-  const featuredPost = posts[0];
-  const diaryPosts = posts.length > 1 ? posts.slice(1) : posts;
-  if (featuredPost) renderFeaturedReview(featuredPost);
-  renderDiary(diaryPosts);
+async function loadCriticPage(page) {
+  if (criticLoading || page < 1) return;
+  criticLoading = true;
+  const firstPage = page === 1;
+  const offset = firstPage ? 0 : 1 + ((page - 1) * CRITICS_PER_PAGE);
+  const responseLimit = firstPage ? CRITICS_PER_PAGE + 2 : CRITICS_PER_PAGE + 1;
+  try {
+    const posts = await loadPosts(offset, responseLimit);
+    if (firstPage) {
+      const featuredPost = posts[0];
+      if (featuredPost) renderFeaturedReview(featuredPost);
+      renderDiary(posts.slice(1, CRITICS_PER_PAGE + 1));
+    } else {
+      renderDiary(posts.slice(0, CRITICS_PER_PAGE));
+    }
+    criticPage = page;
+    criticHasNextPage = posts.length > CRITICS_PER_PAGE;
+    postsPageLabel.textContent = `Page ${criticPage}`;
+    previousPosts.disabled = criticPage === 1;
+    nextPosts.disabled = !criticHasNextPage;
+    criticPagination.hidden = criticPage === 1 && !criticHasNextPage;
+    return posts;
+  } finally {
+    criticLoading = false;
+  }
+}
+
+loadCriticPage(1).then((posts) => {
+  if (!posts) return loadWatched(0, 8);
   const sharedReviewId = Number(new URLSearchParams(window.location.search).get("review"));
   const sharedReview = posts.find((post) => post.id === sharedReviewId);
   if (sharedReview) openModal(sharedReview);
   else if (sharedReviewId > 0) loadPost(sharedReviewId).then(openModal).catch(() => {});
-  loadMorePosts.hidden = posts.length < 8;
   return loadWatched(0, 8);
 }).then((items) => {
   watchedOffset = items.length;
   hasMoreWatched = items.length === 8;
   renderWatched(items);
 }).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
-loadMorePosts.addEventListener("click", async () => {
-  if (loadMorePosts.disabled) return;
-  loadMorePosts.disabled = true;
-  loadMorePosts.textContent = "Chargement…";
-  try {
-    const posts = await loadPosts(postOffset);
-    if (posts.length) {
-      postOffset += posts.length;
-      renderDiary(posts, true);
-    }
-    loadMorePosts.hidden = posts.length < 8;
-  } catch (error) {
-    loadMorePosts.textContent = "Réessayer";
-    loadMorePosts.title = error.message;
-    loadMorePosts.disabled = false;
-    return;
-  }
-  loadMorePosts.disabled = false;
-  loadMorePosts.textContent = "Charger plus de critiques";
-});
+previousPosts.addEventListener("click", () => loadCriticPage(criticPage - 1));
+nextPosts.addEventListener("click", () => loadCriticPage(criticPage + 1));
