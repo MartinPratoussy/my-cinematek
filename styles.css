@@ -1466,6 +1466,10 @@ textarea {
     padding: clamp(1.25rem, 4vw, 2rem);
 }
 
+.letterboxd-sync {
+    margin-top: 1.5rem;
+}
+
 .admin-main .film-picker {
     margin-bottom: 1.5rem;
     padding: 1rem;

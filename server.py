@@ -1,7 +1,10 @@
 import json
 import os
+import re
 import sqlite3
 import threading
+import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote_plus, urlparse
@@ -73,15 +76,15 @@ class Database:
             except Exception:
                 pass
         self.query(f"CREATE TABLE IF NOT EXISTS watched_films (id {identity}, watched_date TEXT NOT NULL, venue TEXT NOT NULL DEFAULT '', rating REAL, note TEXT NOT NULL DEFAULT '', rewatch INTEGER NOT NULL DEFAULT 0, film TEXT NOT NULL)")
-        for column, definition in (("rating", "REAL"), ("note", "TEXT NOT NULL DEFAULT ''"), ("rewatch", "INTEGER NOT NULL DEFAULT 0")):
+        for column, definition in (("rating", "REAL"), ("note", "TEXT NOT NULL DEFAULT ''"), ("rewatch", "INTEGER NOT NULL DEFAULT 0"), ("source_url", "TEXT NOT NULL DEFAULT ''")):
             try:
                 self.query(f"ALTER TABLE watched_films ADD COLUMN {column} {definition}")
             except Exception:
                 pass
 
     def insert_watched(self, item):
-        values = (item["date"], json.dumps(item.get("venue", {})), item.get("rating"), item.get("note", ""), int(bool(item.get("rewatch"))), json.dumps(item.get("film", {})))
-        statement = "INSERT INTO watched_films (watched_date, venue, rating, note, rewatch, film) VALUES (?, ?, ?, ?, ?, ?)"
+        values = (item["date"], json.dumps(item.get("venue", {})), item.get("rating"), item.get("note", ""), int(bool(item.get("rewatch"))), json.dumps(item.get("film", {})), item.get("sourceUrl", ""))
+        statement = "INSERT INTO watched_films (watched_date, venue, rating, note, rewatch, film, source_url) VALUES (?, ?, ?, ?, ?, ?, ?)"
         if self.postgres:
             return self.query(statement + " RETURNING id", values, True)[0][0]
         cursor = self.connection.cursor()
@@ -92,12 +95,15 @@ class Database:
         return item_id
 
     def all_watched(self, limit=8, offset=0):
-        rows = self.query("SELECT id, watched_date, venue, rating, note, rewatch, film FROM watched_films ORDER BY watched_date DESC LIMIT ? OFFSET ?", (limit, offset), fetch=True)
-        return [{"id": row[0], "date": row[1], "venue": json.loads(row[2] or "{}"), "rating": row[3], "note": row[4], "rewatch": bool(row[5]), "film": json.loads(row[6])} for row in rows]
+        rows = self.query("SELECT id, watched_date, venue, rating, note, rewatch, film, source_url FROM watched_films ORDER BY watched_date DESC LIMIT ? OFFSET ?", (limit, offset), fetch=True)
+        return [{"id": row[0], "date": row[1], "venue": json.loads(row[2] or "{}"), "rating": row[3], "note": row[4], "rewatch": bool(row[5]), "film": json.loads(row[6]), "sourceUrl": row[7] or ""} for row in rows]
+
+    def watched_source_urls(self):
+        return {row[0] for row in self.query("SELECT source_url FROM watched_films WHERE source_url <> ''", fetch=True)}
 
     def update_watched(self, item_id, item):
-        values = (item["date"], json.dumps(item.get("venue", {})), item.get("rating"), item.get("note", ""), int(bool(item.get("rewatch"))), json.dumps(item.get("film", {})), item_id)
-        self.query("UPDATE watched_films SET watched_date = ?, venue = ?, rating = ?, note = ?, rewatch = ?, film = ? WHERE id = ?", values)
+        values = (item["date"], json.dumps(item.get("venue", {})), item.get("rating"), item.get("note", ""), int(bool(item.get("rewatch"))), json.dumps(item.get("film", {})), item.get("sourceUrl", ""), item_id)
+        self.query("UPDATE watched_films SET watched_date = ?, venue = ?, rating = ?, note = ?, rewatch = ?, film = ?, source_url = ? WHERE id = ?", values)
         print("Database schema ready.", flush=True)
 
     def insert_post(self, post):
@@ -172,6 +178,10 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         if path == "/api/auth":
             authenticated = self.authorized()
             return self.send_json({"authenticated": authenticated}, 200 if authenticated else 401)
+        if path == "/api/letterboxd/sync":
+            if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
+            payload = self.read_json()
+            return self.sync_letterboxd(str(payload.get("username", "")).strip())
         if path == "/api/watched":
             if not self.authorized(): return self.send_json({"error": "Author access required."}, 401)
             return self.send_json({"id": db.insert_watched(self.read_json())}, 201)
@@ -222,6 +232,51 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             with urlopen(request, timeout=10) as response: places = json.loads(response.read().decode())
             return self.send_json({"results": [{"name": item.get("display_name", "").split(",")[0], "displayName": item.get("display_name", ""), "location": f"https://www.openstreetmap.org/?mlat={item.get('lat')}&mlon={item.get('lon')}#map=18/{item.get('lat')}/{item.get('lon')}"} for item in places]})
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError): return self.send_json({"error": "Cinema search is temporarily unavailable."}, 502)
+
+    def sync_letterboxd(self, username):
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", username):
+            return self.send_json({"error": "Letterboxd username is invalid."}, 400)
+        rss_url = f"https://letterboxd.com/{username}/rss/"
+        request = Request(rss_url, headers={"User-Agent": "my-cinematek/1.0", "Accept": "application/rss+xml, application/xml"})
+        try:
+            with urlopen(request, timeout=15) as response:
+                root = ET.fromstring(response.read())
+        except (HTTPError, URLError, TimeoutError, ET.ParseError):
+            return self.send_json({"error": "Letterboxd feed unavailable or private."}, 502)
+
+        namespace = "{http://letterboxd.com/ns/}"
+        known_sources = db.watched_source_urls()
+        imported = 0
+        skipped = 0
+        for item in root.findall("./channel/item"):
+            source_url = (item.findtext("link") or item.findtext("guid") or "").strip()
+            if not source_url or source_url in known_sources:
+                skipped += 1
+                continue
+            title = (item.findtext(f"{namespace}filmTitle") or "").strip()
+            if not title:
+                title = (item.findtext("title") or "Film sans titre").split(" - ", 1)[0].strip()
+            year = (item.findtext(f"{namespace}filmYear") or "").strip()
+            watched_date = (item.findtext(f"{namespace}watchedDate") or "").strip()
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", watched_date):
+                try:
+                    watched_date = parsedate_to_datetime(item.findtext("pubDate", "")).date().isoformat()
+                except (TypeError, ValueError, OverflowError):
+                    skipped += 1
+                    continue
+            member_rating = (item.findtext(f"{namespace}memberRating") or "").strip()
+            try:
+                rating = float(member_rating) if member_rating else None
+            except ValueError:
+                rating = None
+            tmdb_id = (item.findtext(f"{namespace}tmdbMovieId") or item.findtext("tmdbMovieId") or "").strip()
+            film = {"title": title, "year": year, "poster": ""}
+            if tmdb_id.isdigit():
+                film["id"] = int(tmdb_id)
+            db.insert_watched({"date": watched_date, "venue": {"name": "Letterboxd", "location": source_url}, "rating": rating, "note": "", "rewatch": False, "film": film, "sourceUrl": source_url})
+            known_sources.add(source_url)
+            imported += 1
+        return self.send_json({"username": username, "imported": imported, "skipped": skipped})
 
     def send_json(self, payload, status=200):
         body = json.dumps(payload).encode()

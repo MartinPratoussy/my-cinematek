@@ -51,6 +51,9 @@ const watchedAdminSearch = document.getElementById("watched-admin-search");
 const watchedAdminPrev = document.getElementById("watched-admin-prev");
 const watchedAdminNext = document.getElementById("watched-admin-next");
 const watchedAdminPageLabel = document.getElementById("watched-admin-page-label");
+const letterboxdUsername = document.getElementById("letterboxd-username");
+const letterboxdSyncButton = document.getElementById("letterboxd-sync");
+const letterboxdStatus = document.getElementById("letterboxd-status");
 
 function renderPresetTags() {
   presetTags.innerHTML = TAG_PRESETS.map((tag) => `<button type="button" class="preset-tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("");
@@ -284,6 +287,31 @@ async function loadWatchedAdmin(page = 0) {
   renderWatchedAdmin(items);
 }
 
+async function syncLetterboxd() {
+  const username = letterboxdUsername.value.trim();
+  if (!username) {
+    letterboxdStatus.textContent = "Indiquez votre nom d’utilisateur Letterboxd.";
+    return;
+  }
+  letterboxdSyncButton.disabled = true;
+  letterboxdStatus.textContent = "Lecture du journal Letterboxd…";
+  try {
+    const response = await fetch("/api/letterboxd/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret },
+      body: JSON.stringify({ username })
+    });
+    const payload = await readJson(response);
+    if (!response.ok) throw new Error(payload.error || "La synchronisation a échoué.");
+    letterboxdStatus.textContent = `${payload.imported} nouveau${payload.imported === 1 ? "" : "x"} film${payload.imported === 1 ? "" : "s"} importé${payload.imported === 1 ? "" : "s"}. ${payload.skipped} déjà présent${payload.skipped === 1 ? "" : "s"}.`;
+    loadWatchedAdmin();
+  } catch (error) {
+    letterboxdStatus.textContent = error.message;
+  } finally {
+    letterboxdSyncButton.disabled = false;
+  }
+}
+
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = loginPassword.value.trim();
@@ -339,6 +367,7 @@ watchedAdminNext.addEventListener("click", () => {
   if (watchedAdminCurrentItems.length === WATCHED_ADMIN_PAGE_SIZE) loadWatchedAdmin(watchedAdminPage + 1);
 });
 watchedFilmSearch.addEventListener("input", () => { clearTimeout(watchedFilmTimer); watchedFilmTimer = setTimeout(searchWatchedFilms, 300); });
+letterboxdSyncButton.addEventListener("click", syncLetterboxd);
 watchedVenueType.addEventListener("change", () => {
   const home = watchedVenueType.value === "home";
   watchedVenueField.classList.toggle("hidden", home);
