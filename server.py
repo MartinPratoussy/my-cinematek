@@ -278,8 +278,10 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             if english_film:
                 if not film.get("overview"): film["overview"] = english_film.get("overview", "")
                 if not film.get("tagline"): film["tagline"] = english_film.get("tagline", "")
+        poster_fr, poster_original = self.fetch_tmdb_posters(movie_id, key, film.get("original_language", ""))
+        default_poster = poster_fr or poster_original or (f"https://image.tmdb.org/t/p/w500{film['poster_path']}" if film.get("poster_path") else "")
         director = next((person["name"] for person in film.get("credits", {}).get("crew", []) if person.get("job") == "Director"), "")
-        return self.send_json({"id": film.get("id"), "title": film.get("title", ""), "originalTitle": film.get("original_title", ""), "year": (film.get("release_date") or "")[:4], "releaseDate": film.get("release_date", ""), "poster": f"https://image.tmdb.org/t/p/w500{film['poster_path']}" if film.get("poster_path") else "", "runtime": film.get("runtime"), "genres": [item["name"] for item in film.get("genres", [])], "director": director, "cast": [item["name"] for item in film.get("credits", {}).get("cast", [])[:5]], "budget": film.get("budget") or 0, "countries": [item["name"] for item in film.get("production_countries", [])], "overview": film.get("overview", ""), "tagline": film.get("tagline", ""), "homepage": film.get("homepage", "")})
+        return self.send_json({"id": film.get("id"), "title": film.get("title", ""), "originalTitle": film.get("original_title", ""), "originalLanguage": film.get("original_language", ""), "year": (film.get("release_date") or "")[:4], "releaseDate": film.get("release_date", ""), "poster": default_poster, "posterFr": poster_fr, "posterOriginal": poster_original, "runtime": film.get("runtime"), "genres": [item["name"] for item in film.get("genres", [])], "director": director, "cast": [item["name"] for item in film.get("credits", {}).get("cast", [])[:5]], "budget": film.get("budget") or 0, "countries": [item["name"] for item in film.get("production_countries", [])], "overview": film.get("overview", ""), "tagline": film.get("tagline", ""), "homepage": film.get("homepage", "")})
 
     def fetch_tmdb_movie(self, movie_id, key, language):
         request = Request(f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={key}&language={language}&append_to_response=credits", headers={"Accept": "application/json"})
@@ -288,6 +290,24 @@ class CinematekHandler(SimpleHTTPRequestHandler):
                 return json.loads(response.read().decode())
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
             return None
+
+    def fetch_tmdb_posters(self, movie_id, key, original_language):
+        languages = ",".join(dict.fromkeys(["fr", original_language, "en", "null"]))
+        request = Request(f"https://api.themoviedb.org/3/movie/{movie_id}/images?api_key={key}&include_image_language={languages}", headers={"Accept": "application/json"})
+        try:
+            with urlopen(request, timeout=10) as response:
+                posters = json.loads(response.read().decode()).get("posters", [])
+            localized = [poster for poster in posters if poster.get("iso_639_1") == "fr"]
+            neutral = [poster for poster in posters if poster.get("iso_639_1") is None]
+            original = [poster for poster in posters if poster.get("iso_639_1") == original_language]
+            english = [poster for poster in posters if poster.get("iso_639_1") == "en"]
+            french_poster = (localized or neutral or [None])[0]
+            original_poster = (original or neutral or english or [None])[0]
+            french_url = f"https://image.tmdb.org/t/p/w500{french_poster['file_path']}" if french_poster else ""
+            original_url = f"https://image.tmdb.org/t/p/w500{original_poster['file_path']}" if original_poster else ""
+            return french_url, original_url
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+            return "", ""
 
     def search_places(self, query):
         if not query: return self.send_json({"results": []})

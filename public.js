@@ -51,6 +51,10 @@ function movieTitleFor(item) {
   if (titleLanguage === "original") return film.originalTitle || film.original_title || item?.movieTitle || film.title || "Film";
   return film.title || item?.movieTitle || film.originalTitle || "Film";
 }
+function posterFor(item) {
+  const film = item?.film || item || {};
+  return titleLanguage === "original" ? film.posterOriginal || film.poster || film.posterFr : film.posterFr || film.poster || film.posterOriginal;
+}
 function refreshTitleLanguage() {
   titleLanguageButtons.forEach((button) => {
     const active = button.dataset.titleLanguage === titleLanguage;
@@ -95,7 +99,8 @@ function technicalFacts(film) {
   return `<div class="technical-grid"><span>Réalisation<strong>${escapeHtml(film.director || "Non renseignée")}</strong></span><span>Distribution<strong>${escapeHtml((film.cast || []).join(", ") || "Non renseignée")}</strong></span><span>Durée<strong>${film.runtime ? `${film.runtime} min` : "Non renseignée"}</strong></span><span>Budget<strong>${money(film.budget)}</strong></span><span>Genres<strong>${escapeHtml((film.genres || []).join(", ") || "Non renseignés")}</strong></span><span>Pays<strong>${escapeHtml((film.countries || []).join(", ") || "Non renseigné")}</strong></span></div>`;
 }
 function filmDetailsMarkup(film) {
-  return `<div class="film-details"><div class="film-details-heading">${film.poster ? `<img class="film-details-poster" src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(film))}" />` : ""}<div><p class="eyebrow">détails du film</p><h2 id="film-modal-title">${escapeHtml(movieTitleFor(film))}</h2>${film.tagline ? `<p class="film-tagline">${escapeHtml(film.tagline)}</p>` : ""}</div></div>${technicalFacts(film)}${film.overview ? `<section class="film-overview-block"><p class="eyebrow">synopsis</p><p>${escapeHtml(film.overview)}</p></section>` : ""}${film.homepage ? `<a class="venue-map-button film-homepage" href="${escapeHtml(film.homepage)}" target="_blank" rel="noreferrer">Voir la fiche officielle</a>` : ""}</div>`;
+  const poster = posterFor(film);
+  return `<div class="film-details"><div class="film-details-heading">${poster ? `<img class="film-details-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(film))}" />` : ""}<div><p class="eyebrow">détails du film</p><h2 id="film-modal-title">${escapeHtml(movieTitleFor(film))}</h2>${film.tagline ? `<p class="film-tagline">${escapeHtml(film.tagline)}</p>` : ""}</div></div>${technicalFacts(film)}${film.overview ? `<section class="film-overview-block"><p class="eyebrow">synopsis</p><p>${escapeHtml(film.overview)}</p></section>` : ""}${film.homepage ? `<a class="venue-map-button film-homepage" href="${escapeHtml(film.homepage)}" target="_blank" rel="noreferrer">Voir la fiche officielle</a>` : ""}</div>`;
 }
 async function openFilmModal(film) {
   const details = await loadFilmDetails(film);
@@ -168,7 +173,7 @@ async function createStoryImage(post) {
   context.lineWidth = 2;
   context.strokeRect(72, 72, canvas.width - 144, canvas.height - 144);
 
-  const poster = await loadStoryPoster(post.film?.poster);
+  const poster = await loadStoryPoster(posterFor(post));
   if (poster) {
     const posterWidth = 700;
     const posterHeight = 920;
@@ -240,7 +245,8 @@ async function shareCritic(post, button, status) {
 
 function criticMarkup(post) {
   const film = post.film || {};
-  return `<section class="film-information"><p class="eyebrow">le film</p><div class="modal-film-heading">${film.poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div><h2 id="modal-title">${escapeHtml(movieTitleFor(post))}</h2><p>${escapeHtml(film.year || "")}</p></div></div>${technicalFacts(film)}</section>${viewingContextMarkup(post)}<section class="critic-text"><p class="eyebrow">la critique</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
+  const poster = posterFor(film);
+  return `<section class="film-information"><p class="eyebrow">le film</p><div class="modal-film-heading">${poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div><h2 id="modal-title">${escapeHtml(movieTitleFor(post))}</h2><p>${escapeHtml(film.year || "")}</p></div></div>${technicalFacts(film)}</section>${viewingContextMarkup(post)}<section class="critic-text"><p class="eyebrow">la critique</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
 }
 function bindCriticModal(post) {
   modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle }));
@@ -283,7 +289,7 @@ function renderFeaturedReview(post) {
       <p class="featured-review-teaser">${escapeHtml(teaser)}</p>
       <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span></div>
     </div>
-    <div class="featured-review-cover">${film.poster ? `<img src="${escapeHtml(film.poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" />` : ""}</div>
+    <div class="featured-review-cover">${posterFor(post) ? `<img src="${escapeHtml(posterFor(post))}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" />` : ""}</div>
   `;
   featuredReview.setAttribute("role", "button");
   featuredReview.setAttribute("tabindex", "0");
@@ -301,7 +307,7 @@ function renderDiary(posts, append = false) {
     if (!append) postsList.innerHTML = '<p class="empty-state">Le journal est vide.</p>';
     return;
   }
-  const markup = posts.map((post) => `<button class="diary-row" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(formatDate(post.date))}</span>${post.film?.poster ? `<img class="diary-poster" src="${escapeHtml(post.film.poster)}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(movieTitleFor(post))}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
+  const markup = posts.map((post) => `<button class="diary-row" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(formatDate(post.date))}</span>${posterFor(post) ? `<img class="diary-poster" src="${escapeHtml(posterFor(post))}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(movieTitleFor(post))}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
   if (append) postsList.insertAdjacentHTML("beforeend", markup); else postsList.innerHTML = markup;
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
 }
@@ -309,7 +315,7 @@ function renderWatched(items, append = false) {
   const mergedItems = append ? [...watchedItems, ...items] : items;
   watchedItems = mergedItems;
   const sentinel = hasMoreWatched ? '<div class="watched-sentinel" aria-hidden="true"></div>' : "";
-  watchedList.innerHTML = (mergedItems.length ? mergedItems.map((item, index) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(movieTitleFor(item))}${item.rewatch ? ' <em>revu</em>' : ""}</strong><div class="recent-watch-meta"><span class="recent-watch-date">${escapeHtml(formatDate(item.date))}</span><span class="recent-watch-venue">${venueButton(item.venue) || "visionnage"}</span>${item.rating !== null && item.rating !== undefined ? `<span class="recent-watch-rating">★ ${Number(item.rating).toFixed(1)}</span>` : ""}</div>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${item.film?.poster ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(item.film.poster)}" alt="" /></button>` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>') + sentinel;
+  watchedList.innerHTML = (mergedItems.length ? mergedItems.map((item, index) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(movieTitleFor(item))}${item.rewatch ? ' <em>revu</em>' : ""}</strong><div class="recent-watch-meta"><span class="recent-watch-date">${escapeHtml(formatDate(item.date))}</span><span class="recent-watch-venue">${venueButton(item.venue) || "visionnage"}</span>${item.rating !== null && item.rating !== undefined ? `<span class="recent-watch-rating">★ ${Number(item.rating).toFixed(1)}</span>` : ""}</div>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${posterFor(item) ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(posterFor(item))}" alt="" /></button>` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>') + sentinel;
   watchedList.querySelectorAll(".recent-watch-poster-button").forEach((button) => button.addEventListener("click", () => openFilmModal(mergedItems[Number(button.dataset.watchedIndex)].film)));
   if (watchedObserver) watchedObserver.disconnect();
   const watchedSentinel = watchedList.querySelector(".watched-sentinel");
