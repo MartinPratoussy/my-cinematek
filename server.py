@@ -107,6 +107,13 @@ class Database:
     def watched_source_urls(self):
         return {row[0] for row in self.query("SELECT source_url FROM watched_films WHERE source_url <> ''", fetch=True)}
 
+    def watched_by_source(self, source_url):
+        rows = self.query("SELECT id, watched_date, venue, rating, note, rewatch, film, source_url FROM watched_films WHERE source_url = ?", (source_url,), fetch=True)
+        if not rows:
+            return None
+        row = rows[0]
+        return {"id": row[0], "date": row[1], "venue": json.loads(row[2] or "{}"), "rating": row[3], "note": row[4], "rewatch": bool(row[5]), "film": json.loads(row[6]), "sourceUrl": row[7]}
+
     def watched_film_keys(self):
         watched_rows = self.query("SELECT film FROM watched_films", fetch=True)
         post_rows = self.query("SELECT movie_title, film FROM posts", fetch=True)
@@ -281,6 +288,7 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             title = (item.findtext(f"{namespace}filmTitle") or "").strip()
             if not title:
                 title = (item.findtext("title") or "Film sans titre").split(" - ", 1)[0].strip()
+            title = re.sub(r"(?:\s*[,(-]\s*|\s+)\d{4}\)?\s*$", "", title).strip()
             year = (item.findtext(f"{namespace}filmYear") or "").strip()
             watched_date = (item.findtext(f"{namespace}watchedDate") or "").strip()
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", watched_date):
@@ -298,16 +306,52 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             film = {"title": title, "year": year, "poster": ""}
             if tmdb_id.isdigit():
                 film["id"] = int(tmdb_id)
+                match = self.find_tmdb_film(title, year)
+                if str(match.get("id", "")) == tmdb_id:
+                    film["poster"] = match.get("poster", "")
+            else:
+                film.update(self.find_tmdb_film(title, year))
+            tmdb_id = str(film.get("id") or "")
+            if source_url in known_sources:
+                existing = db.watched_by_source(source_url)
+                if existing:
+                    changed = False
+                    if not existing["film"].get("poster") and film.get("poster"):
+                        existing["film"] = {**existing["film"], **film}
+                        changed = True
+                    if existing["venue"].get("name") == "Letterboxd":
+                        existing["venue"] = {}
+                        changed = True
+                    if changed:
+                        db.update_watched(existing["id"], existing)
+                skipped += 1
+                continue
             if (tmdb_id and tmdb_id in known_film_ids) or normalized_title(title) in known_film_titles:
                 skipped += 1
                 continue
-            db.insert_watched({"date": watched_date, "venue": {"name": "Letterboxd", "location": source_url}, "rating": rating, "note": "", "rewatch": False, "film": film, "sourceUrl": source_url})
+            db.insert_watched({"date": watched_date, "venue": {}, "rating": rating, "note": "", "rewatch": False, "film": film, "sourceUrl": source_url})
             known_sources.add(source_url)
             if tmdb_id:
                 known_film_ids.add(tmdb_id)
             known_film_titles.add(normalized_title(title))
             imported += 1
         return self.send_json({"username": username, "imported": imported, "skipped": skipped})
+
+    def find_tmdb_film(self, title, year):
+        key = os.environ.get("TMDB_API_KEY")
+        if not key:
+            return {}
+        year_query = f"&year={quote_plus(year)}" if year.isdigit() else ""
+        request = Request(f"{TMDB_API_URL}?api_key={key}&language=en-US&include_adult=false&query={quote_plus(title)}{year_query}", headers={"Accept": "application/json"})
+        try:
+            with urlopen(request, timeout=10) as response:
+                results = json.loads(response.read().decode()).get("results", [])
+            if not results:
+                return {}
+            match = results[0]
+            return {"id": match.get("id"), "title": match.get("title") or title, "year": (match.get("release_date") or year)[:4], "poster": f"https://image.tmdb.org/t/p/w500{match['poster_path']}" if match.get("poster_path") else ""}
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+            return {}
 
     def send_json(self, payload, status=200):
         body = json.dumps(payload).encode()
