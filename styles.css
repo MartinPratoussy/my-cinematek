@@ -2353,7 +2353,8 @@ body.modal-open {
     }
 
     .critic-modal-dialog {
-        max-height: 92vh;
+        max-height: calc(100vh - 3rem);
+        padding: 2.5rem 1rem 1.25rem;
     }
 }
 
