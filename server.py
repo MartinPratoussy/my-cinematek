@@ -3,6 +3,7 @@ import os
 import re
 import sqlite3
 import threading
+import unicodedata
 import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -12,6 +13,10 @@ from urllib.request import Request, urlopen
 
 TMDB_API_URL = "https://api.themoviedb.org/3/search/movie"
 DEFAULT_DB = os.path.join(os.environ.get("LOCALAPPDATA", os.path.dirname(__file__)), "my-cinematek.db")
+
+def normalized_title(value):
+    plain = unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode().lower()
+    return "".join(character for character in plain if character.isalnum())
 
 class Database:
     def __init__(self):
@@ -100,6 +105,24 @@ class Database:
 
     def watched_source_urls(self):
         return {row[0] for row in self.query("SELECT source_url FROM watched_films WHERE source_url <> ''", fetch=True)}
+
+    def watched_film_keys(self):
+        watched_rows = self.query("SELECT film FROM watched_films", fetch=True)
+        post_rows = self.query("SELECT movie_title, film FROM posts", fetch=True)
+        film_ids = set()
+        film_titles = set()
+        for (film_json,) in watched_rows:
+            film = json.loads(film_json or "{}")
+            if film.get("id") is not None:
+                film_ids.add(str(film["id"]))
+            if film.get("title"):
+                film_titles.add(normalized_title(film["title"]))
+        for movie_title, film_json in post_rows:
+            film = json.loads(film_json or "{}")
+            if film.get("id") is not None:
+                film_ids.add(str(film["id"]))
+            film_titles.add(normalized_title(film.get("title") or movie_title))
+        return film_ids, film_titles
 
     def update_watched(self, item_id, item):
         values = (item["date"], json.dumps(item.get("venue", {})), item.get("rating"), item.get("note", ""), int(bool(item.get("rewatch"))), json.dumps(item.get("film", {})), item.get("sourceUrl", ""), item_id)
@@ -246,6 +269,7 @@ class CinematekHandler(SimpleHTTPRequestHandler):
 
         namespace = "{http://letterboxd.com/ns/}"
         known_sources = db.watched_source_urls()
+        known_film_ids, known_film_titles = db.watched_film_keys()
         imported = 0
         skipped = 0
         for item in root.findall("./channel/item"):
@@ -273,8 +297,14 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             film = {"title": title, "year": year, "poster": ""}
             if tmdb_id.isdigit():
                 film["id"] = int(tmdb_id)
+            if (tmdb_id and tmdb_id in known_film_ids) or normalized_title(title) in known_film_titles:
+                skipped += 1
+                continue
             db.insert_watched({"date": watched_date, "venue": {"name": "Letterboxd", "location": source_url}, "rating": rating, "note": "", "rewatch": False, "film": film, "sourceUrl": source_url})
             known_sources.add(source_url)
+            if tmdb_id:
+                known_film_ids.add(tmdb_id)
+            known_film_titles.add(normalized_title(title))
             imported += 1
         return self.send_json({"username": username, "imported": imported, "skipped": skipped})
 
