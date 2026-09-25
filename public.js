@@ -1,7 +1,6 @@
 const postsList = document.getElementById("posts-list");
 const loadMorePosts = document.getElementById("load-more-posts");
 const watchedList = document.getElementById("watched-list");
-const loadMoreWatchedButton = document.getElementById("load-more-watched");
 const modal = document.getElementById("critic-modal");
 const modalContent = document.getElementById("modal-content");
 const filmModal = document.getElementById("film-modal");
@@ -12,6 +11,7 @@ let watchedItems = [];
 let watchedOffset = 0;
 let watchedLoading = false;
 let hasMoreWatched = true;
+let watchedObserver = null;
 
 function escapeHtml(value = "") {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
@@ -277,9 +277,17 @@ function renderDiary(posts, append = false) {
 function renderWatched(items, append = false) {
   const mergedItems = append ? [...watchedItems, ...items] : items;
   watchedItems = mergedItems;
-  watchedList.innerHTML = mergedItems.length ? mergedItems.map((item, index) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(item.film?.title || "Film sans titre")}${item.rewatch ? ' <em>revu</em>' : ""}</strong><div class="recent-watch-meta"><span class="recent-watch-date">${escapeHtml(formatDate(item.date))}</span><span class="recent-watch-venue">${venueButton(item.venue) || "visionnage"}</span>${item.rating !== null && item.rating !== undefined ? `<span class="recent-watch-rating">★ ${Number(item.rating).toFixed(1)}</span>` : ""}</div>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${item.film?.poster ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(item.film.poster)}" alt="" /></button>` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>';
+  const sentinel = hasMoreWatched ? '<div class="watched-sentinel" aria-hidden="true"></div>' : "";
+  watchedList.innerHTML = (mergedItems.length ? mergedItems.map((item, index) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(item.film?.title || "Film sans titre")}${item.rewatch ? ' <em>revu</em>' : ""}</strong><div class="recent-watch-meta"><span class="recent-watch-date">${escapeHtml(formatDate(item.date))}</span><span class="recent-watch-venue">${venueButton(item.venue) || "visionnage"}</span>${item.rating !== null && item.rating !== undefined ? `<span class="recent-watch-rating">★ ${Number(item.rating).toFixed(1)}</span>` : ""}</div>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${item.film?.poster ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(item.film.poster)}" alt="" /></button>` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>') + sentinel;
   watchedList.querySelectorAll(".recent-watch-poster-button").forEach((button) => button.addEventListener("click", () => openFilmModal(mergedItems[Number(button.dataset.watchedIndex)].film)));
-  if (loadMoreWatchedButton) loadMoreWatchedButton.hidden = !hasMoreWatched;
+  if (watchedObserver) watchedObserver.disconnect();
+  const watchedSentinel = watchedList.querySelector(".watched-sentinel");
+  if (watchedSentinel && typeof IntersectionObserver !== "undefined") {
+    watchedObserver = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMoreWatched();
+    }, { root: watchedList, threshold: .2 });
+    watchedObserver.observe(watchedSentinel);
+  }
 }
 
 async function loadMoreWatched() {
@@ -289,7 +297,7 @@ async function loadMoreWatched() {
     const items = await loadWatched(watchedOffset, 8);
     if (!items.length) {
       hasMoreWatched = false;
-      if (loadMoreWatchedButton) loadMoreWatchedButton.hidden = true;
+      renderWatched([], true);
       return;
     }
     watchedOffset += items.length;
@@ -297,11 +305,6 @@ async function loadMoreWatched() {
     hasMoreWatched = items.length === 8;
   } finally {
     watchedLoading = false;
-    if (loadMoreWatchedButton) {
-      loadMoreWatchedButton.disabled = false;
-      loadMoreWatchedButton.textContent = "Voir plus de films";
-      loadMoreWatchedButton.hidden = !hasMoreWatched;
-    }
   }
 }
 document.querySelectorAll("[data-close-modal]").forEach((element) => element.addEventListener("click", closeModal));
@@ -325,12 +328,6 @@ loadPosts().then((posts) => {
   hasMoreWatched = items.length === 8;
   renderWatched(items);
 }).catch((error) => { postsList.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; });
-loadMoreWatchedButton.addEventListener("click", async () => {
-  if (watchedLoading) return;
-  loadMoreWatchedButton.disabled = true;
-  loadMoreWatchedButton.textContent = "Chargement…";
-  await loadMoreWatched();
-});
 loadMorePosts.addEventListener("click", async () => {
   if (loadMorePosts.disabled) return;
   loadMorePosts.disabled = true;
