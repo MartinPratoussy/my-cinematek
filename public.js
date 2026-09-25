@@ -118,10 +118,9 @@ function loadStoryPoster(url) {
   return new Promise((resolve) => {
     if (!url) return resolve(null);
     const image = new Image();
-    image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
     image.onerror = () => resolve(null);
-    image.src = url;
+    image.src = `/api/poster?url=${encodeURIComponent(url)}`;
   });
 }
 
@@ -157,7 +156,7 @@ async function createStoryImage(post) {
   context.font = "500 68px Georgia, serif";
   drawStoryText(context, post.movieTitle, 120, 1330, 840, 78, 2);
   context.fillStyle = "#d7b5a9";
-  context.font = "34px Arial, sans-serif";
+  context.font = "48px Georgia, serif";
   drawStoryText(context, post.title, 120, 1510, 840, 46, 3);
   context.fillStyle = "#f0ad72";
   context.font = "600 54px Georgia, serif";

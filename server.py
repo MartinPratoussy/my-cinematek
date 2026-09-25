@@ -142,10 +142,21 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             limit = min(max(int(parse_qs(parsed.query).get("limit", [8])[0]), 1), 50)
             offset = max(int(parse_qs(parsed.query).get("offset", [0])[0]), 0)
             return self.send_json(db.all_posts(limit, offset))
-            if parsed.path.startswith("/api/posts/"):
-                post_id = int(parsed.path.rsplit("/", 1)[-1])
-                post = db.get_post(post_id)
-                return self.send_json(post if post else {"error": "Critique introuvable."}, 200 if post else 404)
+        if parsed.path.startswith("/api/posts/"):
+            post_id = int(parsed.path.rsplit("/", 1)[-1])
+            post = db.get_post(post_id)
+            return self.send_json(post if post else {"error": "Critique introuvable."}, 200 if post else 404)
+        if parsed.path == "/api/poster":
+            poster_url = parse_qs(parsed.query).get("url", [""])[0]
+            poster = urlparse(poster_url)
+            if poster.scheme != "https" or poster.hostname != "image.tmdb.org" or not poster.path.startswith("/t/p/"):
+                return self.send_json({"error": "Poster unavailable."}, 400)
+            try:
+                request = Request(poster_url, headers={"Accept": "image/*"})
+                with urlopen(request, timeout=10) as response:
+                    return self.send_bytes(response.read(), response.headers.get_content_type())
+            except (HTTPError, URLError, TimeoutError):
+                return self.send_json({"error": "Poster unavailable."}, 502)
         if parsed.path == "/api/watched":
             params = parse_qs(parsed.query)
             limit = min(max(int(params.get("limit", [8])[0]), 1), 50)
@@ -218,6 +229,14 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store, max-age=0")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def send_bytes(self, body, content_type):
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "public, max-age=3600")
         self.end_headers()
         self.wfile.write(body)
 
