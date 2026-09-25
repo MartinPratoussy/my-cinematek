@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote_plus, urlparse
@@ -12,31 +13,55 @@ DEFAULT_DB = os.path.join(os.environ.get("LOCALAPPDATA", os.path.dirname(__file_
 class Database:
     def __init__(self):
         self.postgres = bool(os.environ.get("DATABASE_URL"))
+        self.lock = threading.Lock()
         if os.environ.get("RENDER") and not self.postgres:
             raise RuntimeError("DATABASE_URL is required on Render.")
         if self.postgres:
             import psycopg
-            print("Connecting to PostgreSQL...", flush=True)
-            self.connection = psycopg.connect(os.environ["DATABASE_URL"], connect_timeout=10)
-            print("PostgreSQL connected.", flush=True)
+            self.psycopg = psycopg
+            self._connect_postgres()
         else:
             self.connection = sqlite3.connect(os.environ.get("SQLITE_PATH", DEFAULT_DB), check_same_thread=False)
         self.init_schema()
 
+    def _connect_postgres(self):
+        print("Connecting to PostgreSQL...", flush=True)
+        self.connection = self.psycopg.connect(os.environ["DATABASE_URL"], connect_timeout=10)
+        print("PostgreSQL connected.", flush=True)
+
     def query(self, statement, params=(), fetch=False):
         if self.postgres:
             statement = statement.replace("?", "%s")
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(statement, params)
-            rows = cursor.fetchall() if fetch else []
-            self.connection.commit()
-            return rows
-        except Exception:
-            self.connection.rollback()
-            raise
-        finally:
-            cursor.close()
+        with self.lock:
+            for attempt in range(2):
+                cursor = None
+                try:
+                    cursor = self.connection.cursor()
+                    cursor.execute(statement, params)
+                    rows = cursor.fetchall() if fetch else []
+                    self.connection.commit()
+                    return rows
+                except self.psycopg.OperationalError if self.postgres else sqlite3.OperationalError:
+                    if cursor is not None:
+                        cursor.close()
+                        cursor = None
+                    if not self.postgres or attempt == 1:
+                        raise
+                    try:
+                        self.connection.close()
+                    except Exception:
+                        pass
+                    print("PostgreSQL connection was closed; reconnecting and retrying query.", flush=True)
+                    self._connect_postgres()
+                except Exception:
+                    try:
+                        self.connection.rollback()
+                    except Exception:
+                        pass
+                    raise
+                finally:
+                    if cursor is not None:
+                        cursor.close()
 
     def init_schema(self):
         print("Checking database schema...", flush=True)
