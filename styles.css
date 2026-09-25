@@ -1953,6 +1953,28 @@ body::after {
     background: linear-gradient(135deg, #291317 0%, #171012 58%, #100d0f 100%);
     border-color: #7a3740;
     box-shadow: 0 34px 110px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 204, 161, .08);
+    scrollbar-color: #9b5b46 rgba(49, 20, 26, .72);
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+}
+
+.critic-modal-dialog::-webkit-scrollbar {
+    width: 9px;
+}
+
+.critic-modal-dialog::-webkit-scrollbar-track {
+    background: rgba(49, 20, 26, .72);
+    border-left: 1px solid rgba(135, 64, 74, .35);
+}
+
+.critic-modal-dialog::-webkit-scrollbar-thumb {
+    background: #9b5b46;
+    border: 2px solid #211216;
+    border-radius: 8px;
+}
+
+.critic-modal-dialog::-webkit-scrollbar-thumb:hover {
+    background: #d58d55;
 }
 
 .modal-close {
