@@ -291,10 +291,41 @@ textarea {
 
 .recent-watch-poster-button {
     grid-column: 2;
+    position: relative;
+    z-index: 1;
+    justify-self: end;
+    transform: translateY(0) rotate(0);
+    transition: transform .24s cubic-bezier(.2, .8, .2, 1), filter .24s ease;
 }
 
 .recent-watch-poster-button .recent-watch-poster {
     display: block;
+    transition: box-shadow .24s ease, filter .24s ease;
+}
+
+.recent-watch-poster-button:hover,
+.recent-watch-poster-button:focus-visible {
+    transform: translate(-4px, -7px) rotate(1.5deg);
+    filter: drop-shadow(0 8px 7px rgba(18, 7, 10, .35));
+}
+
+.recent-watch-poster-button:hover .recent-watch-poster,
+.recent-watch-poster-button:focus-visible .recent-watch-poster {
+    filter: brightness(1.12);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+.recent-watch-poster-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .recent-watch-poster-button,
+    .recent-watch-poster-button .recent-watch-poster {
+        transition: none;
+    }
 }
 
 @media (max-width: 600px) {
