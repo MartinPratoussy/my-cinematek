@@ -40,6 +40,10 @@ textarea {
     font: inherit;
 }
 
+.hidden {
+    display: none !important;
+}
+
 .container {
     width: min(var(--max-width), calc(100% - 2rem));
     margin: 0 auto;
@@ -1460,6 +1464,123 @@ textarea {
 
 .admin-form {
     padding: clamp(1.25rem, 4vw, 2rem);
+}
+
+.admin-main .film-picker {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    background: rgba(112, 35, 46, .12);
+}
+
+.admin-main .search-row {
+    display: flex;
+    align-items: stretch;
+    gap: .75rem;
+}
+
+.admin-main .search-row input {
+    flex: 1;
+}
+
+.admin-main .field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.admin-main label {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    margin-bottom: 1rem;
+    color: var(--ink-soft);
+    font-weight: 600;
+}
+
+.admin-main input,
+.admin-main textarea,
+.admin-main select {
+    width: 100%;
+    padding: .8rem .9rem;
+    color: var(--ink);
+    background: #242323;
+    border: 1px solid var(--border);
+    border-radius: 0;
+}
+
+.admin-main input:focus,
+.admin-main textarea:focus,
+.admin-main select:focus {
+    outline: 2px solid rgba(213, 141, 85, .25);
+    border-color: var(--accent);
+}
+
+.admin-main textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.admin-main .film-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: .7rem;
+}
+
+.admin-main .film-result {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    min-height: 72px;
+    padding: .6rem;
+    color: var(--ink);
+    background: #201519;
+    border: 1px solid var(--border);
+    text-align: left;
+    cursor: pointer;
+}
+
+.admin-main .film-result img,
+.admin-main .selected-film img {
+    width: 42px;
+    height: 62px;
+    flex: 0 0 auto;
+    object-fit: cover;
+}
+
+.admin-main .film-result:hover,
+.admin-main .film-result:focus-visible {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.admin-main .form-actions {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.admin-main .primary-btn,
+.admin-main .secondary-btn {
+    appearance: none;
+    cursor: pointer;
+}
+
+.admin-main .primary-btn {
+    padding: .85rem 1.3rem;
+    color: #171310;
+    background: var(--accent);
+    border: 1px solid var(--accent-strong);
+    border-radius: 0;
+    font-weight: 700;
+}
+
+.admin-main .secondary-btn {
+    padding: .75rem 1rem;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 0;
 }
 
 .admin-posts {
