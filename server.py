@@ -262,7 +262,7 @@ class CinematekHandler(SimpleHTTPRequestHandler):
     def search_tmdb(self, query):
         key = os.environ.get("TMDB_API_KEY")
         if not key: return self.send_json({"error": "Film search is not configured yet."}, 503)
-        request = Request(f"{TMDB_API_URL}?api_key={key}&language=en-US&include_adult=false&query={quote_plus(query)}", headers={"Accept": "application/json"})
+        request = Request(f"{TMDB_API_URL}?api_key={key}&language=fr-FR&include_adult=false&query={quote_plus(query)}", headers={"Accept": "application/json"})
         try:
             with urlopen(request, timeout=10) as response: return self.send_json({"results": json.loads(response.read().decode()).get("results", [])})
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError): return self.send_json({"error": "Film catalogue is temporarily unavailable."}, 502)
@@ -270,12 +270,24 @@ class CinematekHandler(SimpleHTTPRequestHandler):
     def movie_details(self, movie_id):
         key = os.environ.get("TMDB_API_KEY")
         if not key or not movie_id.isdigit(): return self.send_json({"error": "Film details are unavailable."}, 400)
-        request = Request(f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={key}&language=en-US&append_to_response=credits", headers={"Accept": "application/json"})
+        film = self.fetch_tmdb_movie(movie_id, key, "fr-FR")
+        if not film:
+            return self.send_json({"error": "Film details are temporarily unavailable."}, 502)
+        if not film.get("overview") or not film.get("tagline"):
+            english_film = self.fetch_tmdb_movie(movie_id, key, "en-US")
+            if english_film:
+                if not film.get("overview"): film["overview"] = english_film.get("overview", "")
+                if not film.get("tagline"): film["tagline"] = english_film.get("tagline", "")
+        director = next((person["name"] for person in film.get("credits", {}).get("crew", []) if person.get("job") == "Director"), "")
+        return self.send_json({"id": film.get("id"), "title": film.get("title", ""), "originalTitle": film.get("original_title", ""), "year": (film.get("release_date") or "")[:4], "releaseDate": film.get("release_date", ""), "poster": f"https://image.tmdb.org/t/p/w500{film['poster_path']}" if film.get("poster_path") else "", "runtime": film.get("runtime"), "genres": [item["name"] for item in film.get("genres", [])], "director": director, "cast": [item["name"] for item in film.get("credits", {}).get("cast", [])[:5]], "budget": film.get("budget") or 0, "countries": [item["name"] for item in film.get("production_countries", [])], "overview": film.get("overview", ""), "tagline": film.get("tagline", ""), "homepage": film.get("homepage", "")})
+
+    def fetch_tmdb_movie(self, movie_id, key, language):
+        request = Request(f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={key}&language={language}&append_to_response=credits", headers={"Accept": "application/json"})
         try:
-            with urlopen(request, timeout=10) as response: film = json.loads(response.read().decode())
-            director = next((person["name"] for person in film.get("credits", {}).get("crew", []) if person.get("job") == "Director"), "")
-            return self.send_json({"id": film.get("id"), "title": film.get("title", ""), "year": (film.get("release_date") or "")[:4], "releaseDate": film.get("release_date", ""), "poster": f"https://image.tmdb.org/t/p/w500{film['poster_path']}" if film.get("poster_path") else "", "runtime": film.get("runtime"), "genres": [item["name"] for item in film.get("genres", [])], "director": director, "cast": [item["name"] for item in film.get("credits", {}).get("cast", [])[:5]], "budget": film.get("budget") or 0, "countries": [item["name"] for item in film.get("production_countries", [])], "overview": film.get("overview", ""), "tagline": film.get("tagline", ""), "homepage": film.get("homepage", "")})
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError): return self.send_json({"error": "Film details are temporarily unavailable."}, 502)
+            with urlopen(request, timeout=10) as response:
+                return json.loads(response.read().decode())
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+            return None
 
     def search_places(self, query):
         if not query: return self.send_json({"results": []})
@@ -363,14 +375,14 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         if not key:
             return {}
         year_query = f"&year={quote_plus(year)}" if year.isdigit() else ""
-        request = Request(f"{TMDB_API_URL}?api_key={key}&language=en-US&include_adult=false&query={quote_plus(title)}{year_query}", headers={"Accept": "application/json"})
+        request = Request(f"{TMDB_API_URL}?api_key={key}&language=fr-FR&include_adult=false&query={quote_plus(title)}{year_query}", headers={"Accept": "application/json"})
         try:
             with urlopen(request, timeout=10) as response:
                 results = json.loads(response.read().decode()).get("results", [])
             if not results:
                 return {}
             match = results[0]
-            return {"id": match.get("id"), "title": match.get("title") or title, "year": (match.get("release_date") or year)[:4], "poster": f"https://image.tmdb.org/t/p/w500{match['poster_path']}" if match.get("poster_path") else ""}
+            return {"id": match.get("id"), "title": match.get("title") or title, "originalTitle": match.get("original_title") or title, "year": (match.get("release_date") or year)[:4], "poster": f"https://image.tmdb.org/t/p/w500{match['poster_path']}" if match.get("poster_path") else ""}
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
             return {}
 
