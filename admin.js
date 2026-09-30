@@ -70,9 +70,9 @@ function updateVenueFields() {
   const home = venueType.value === "home";
   venueNameField.classList.toggle("hidden", home);
   if (home) {
-    venueName.value = "My TV";
+    venueName.value = "Ma TV";
     venueLocation.value = "";
-  } else if (venueName.value === "My TV") {
+  } else if (venueName.value === "Ma TV") {
     venueName.value = "";
   }
 }
@@ -364,7 +364,7 @@ cancelEdit.addEventListener("click", resetForm);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const savedFilm = selectedFilmData || (filmData.value ? JSON.parse(filmData.value) : null);
-  const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), venue: { type: venueType.value, name: venueType.value === "home" ? "My TV" : venueName.value.trim(), location: venueType.value === "home" ? "" : venueLocation.value.trim() }, tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), conclusion: document.getElementById("conclusion").value.trim(), film: savedFilm };
+  const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), venue: { type: venueType.value, name: venueType.value === "home" ? "Ma TV" : venueName.value.trim(), location: venueType.value === "home" ? "" : venueLocation.value.trim() }, tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), conclusion: document.getElementById("conclusion").value.trim(), film: savedFilm };
   if (!post.title || !post.movieTitle || !post.date || !post.body || !post.conclusion || !savedFilm?.title) { editorStatus.textContent = "Choisissez un film et complétez la critique."; return; }
   const response = await fetch(editingPostId ? `/api/posts/${editingPostId}` : "/api/posts", { method: editingPostId ? "PUT" : "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify(post) });
   if (!response.ok) { editorStatus.textContent = "La critique n’a pas pu être enregistrée."; return; }
@@ -387,10 +387,10 @@ watchedVenueType.addEventListener("change", () => {
   const home = watchedVenueType.value === "home";
   watchedVenueField.classList.toggle("hidden", home);
   if (home) {
-    watchedVenueName.value = "My TV";
+    watchedVenueName.value = "Ma TV";
     watchedVenueLocation.value = "";
     watchedVenueResults.innerHTML = "";
-  } else if (watchedVenueName.value === "My TV") {
+  } else if (watchedVenueName.value === "Ma TV") {
     watchedVenueName.value = "";
   }
 });
@@ -398,7 +398,7 @@ watchedForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const film = watchedFilmData.value ? JSON.parse(watchedFilmData.value) : null;
   if (!film?.id || !watchedDate.value) { watchedStatus.textContent = "Choisissez un film et une date."; return; }
-  const watchedPayload = { date: watchedDate.value, rating: watchedRating.value ? Number(watchedRating.value) : null, note: watchedNote.value.trim(), rewatch: watchedRewatch.checked, film: { id: film.id, title: film.title, year: (film.release_date || "").slice(0, 4), poster: posterUrl(film.poster_path) }, venue: { type: watchedVenueType.value, name: watchedVenueType.value === "home" ? "My TV" : watchedVenueName.value.trim(), location: watchedVenueType.value === "home" ? "" : watchedVenueLocation.value.trim() } };
+  const watchedPayload = { date: watchedDate.value, rating: watchedRating.value ? Number(watchedRating.value) : null, note: watchedNote.value.trim(), rewatch: watchedRewatch.checked, film: { id: film.id, title: film.title, year: (film.release_date || "").slice(0, 4), poster: posterUrl(film.poster_path) }, venue: { type: watchedVenueType.value, name: watchedVenueType.value === "home" ? "Ma TV" : watchedVenueName.value.trim(), location: watchedVenueType.value === "home" ? "" : watchedVenueLocation.value.trim() } };
   const response = await fetch(editingWatchedId ? `/api/watched/${editingWatchedId}` : "/api/watched", { method: editingWatchedId ? "PUT" : "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify(watchedPayload) });
   if (!response.ok) { watchedStatus.textContent = "Le visionnage n’a pas pu être enregistré."; return; }
   watchedForm.reset(); watchedFilmData.value = ""; editingWatchedId = null; watchedForm.querySelector("button[type='submit']").textContent = "Ajouter aux visionnages"; watchedStatus.textContent = "Visionnage enregistré."; loadWatchedAdmin();
