@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Administration | my-cinematek</title>
-    <link rel="stylesheet" href="styles.css?v=20260925-04" />
+    <link rel="stylesheet" href="styles.css?v=20260930-admin-01" />
 </head>
 
 <body>
@@ -14,7 +14,7 @@
             <a href="/" class="brand">my-cinematek</a>
             <nav class="main-nav" aria-label="Navigation d’administration">
                 <a href="/">Voir le site</a>
-                <a href="#editor">Éditeur</a>
+                <a href="#review-form">Nouvelle critique</a>
             </nav>
         </div>
     </header>
@@ -37,13 +37,21 @@
         <section id="editor" class="admin-editor hidden">
             <div class="admin-heading">
                 <div>
-                    <p class="eyebrow">éditeur privé</p>
-                    <h1>Écrire une critique</h1>
+                    <p class="eyebrow">espace auteur</p>
+                    <h1>Studio</h1>
                 </div>
                 <button id="logout" class="secondary-btn" type="button">Verrouiller</button>
             </div>
             <p id="editor-status" class="editor-status" aria-live="polite"></p>
 
+            <nav class="admin-quick-nav" aria-label="Raccourcis de l’espace auteur">
+                <a href="#review-form">Nouvelle critique</a>
+                <a href="#watched-form">Ajouter un visionnage</a>
+                <a href="#watched-admin-list">Visionnages enregistrés</a>
+                <a href="#admin-post-list">Critiques publiées</a>
+            </nav>
+
+            <div class="admin-workspace">
             <form id="review-form" class="panel admin-form">
                 <div class="film-picker">
                     <label for="film-search">Rechercher un film</label>
@@ -93,6 +101,7 @@
                 </div>
             </form>
 
+            <aside class="admin-side-stack" aria-label="Outils de visionnage">
             <section class="panel admin-form letterboxd-sync">
                 <div class="section-head">
                     <p class="eyebrow">import discret</p>
@@ -139,6 +148,8 @@
                 <button class="secondary-btn" type="submit">Ajouter aux visionnages</button>
                 <p id="watched-status" class="field-hint" aria-live="polite"></p>
             </form>
+            </aside>
+            </div>
 
             <section class="admin-posts watched-admin-list">
                 <div class="section-head">
