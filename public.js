@@ -350,7 +350,14 @@ function renderWatched(items, append = false) {
   const mergedItems = append ? [...watchedItems, ...items] : items;
   watchedItems = mergedItems;
   const sentinel = hasMoreWatched ? '<div class="watched-sentinel" aria-hidden="true"></div>' : "";
-  watchedList.innerHTML = (mergedItems.length ? mergedItems.map((item, index) => `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(movieTitleFor(item))}${item.rewatch ? ' <em>revu</em>' : ""}</strong><div class="recent-watch-meta"><span class="recent-watch-date">${escapeHtml(formatDate(item.date))}</span><span class="recent-watch-venue">${venueButton(item.venue) || "visionnage"}</span>${item.rating !== null && item.rating !== undefined ? `<span class="recent-watch-rating">★ ${Number(item.rating).toFixed(1)}</span>` : ""}</div>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${posterFor(item) ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(posterFor(item))}" alt="" /></button>` : ""}</article>`).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>') + sentinel;
+  watchedList.innerHTML = (mergedItems.length ? mergedItems.map((item, index) => {
+    const score = Number(item.rating);
+    const scoreLabel = Number.isFinite(score) ? score.toFixed(1) : "--";
+    const rating = item.rating !== null && item.rating !== undefined
+      ? `<span class="recent-watch-rating" style="--rating-rgb: ${ratingTone(score)}" aria-label="Note ${scoreLabel} sur 10">${scoreLabel}</span>`
+      : "";
+    return `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(movieTitleFor(item))}${item.rewatch ? ' <em>revu</em>' : ""}</strong><div class="recent-watch-meta"><span class="recent-watch-date">${escapeHtml(formatDate(item.date))}</span><span class="recent-watch-venue">${venueButton(item.venue) || "visionnage"}</span>${rating}</div>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${posterFor(item) ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(posterFor(item))}" alt="" /></button>` : ""}</article>`;
+  }).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>') + sentinel;
   watchedList.querySelectorAll(".recent-watch-poster-button").forEach((button) => button.addEventListener("click", () => openFilmModal(mergedItems[Number(button.dataset.watchedIndex)].film)));
   if (watchedObserver) watchedObserver.disconnect();
   const watchedSentinel = watchedList.querySelector(".watched-sentinel");
