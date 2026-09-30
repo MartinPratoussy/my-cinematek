@@ -287,7 +287,7 @@ function renderFeaturedReview(post) {
       <h2>${escapeHtml(post.title)}</h2>
       <p class="featured-review-title">${escapeHtml(movieTitleFor(post))}</p>
       <p class="featured-review-teaser">${escapeHtml(teaser)}</p>
-      <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span></div>
+      <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span><span class="featured-review-rating" aria-label="Note ${Number(post.rating).toFixed(1)} sur 10"><strong>${Number(post.rating).toFixed(1)}</strong><small>/10</small></span></div>
     </div>
     <div class="featured-review-cover">${posterFor(post) ? `<img src="${escapeHtml(posterFor(post))}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" />` : ""}</div>
   `;
