@@ -33,6 +33,16 @@ function formatDate(value) {
   const parts = String(value || "").split("-");
   return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value || "";
 }
+function ratingTone(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score)) return "164, 166, 161";
+  const stops = [[0, [225, 92, 92]], [5, [239, 188, 94]], [10, [119, 185, 135]]];
+  const boundedScore = Math.max(0, Math.min(10, score));
+  const start = boundedScore < 5 ? stops[0] : stops[1];
+  const end = boundedScore < 5 ? stops[1] : stops[2];
+  const progress = (boundedScore - start[0]) / (end[0] - start[0]);
+  return start[1].map((channel, index) => Math.round(channel + (end[1][index] - channel) * progress)).join(", ");
+}
 function venueLabel(venue) {
   if (!venue || !venue.name) return "";
   const label = escapeHtml(venue.name);
@@ -250,6 +260,7 @@ function criticMarkup(post) {
 }
 function bindCriticModal(post) {
   modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle }));
+  modalContent.querySelector(".rating")?.style.setProperty("--rating-rgb", ratingTone(post.rating));
   const shareButton = modalContent.querySelector(".share-button");
   shareButton?.addEventListener("click", () => shareCritic(post, shareButton, modalContent.querySelector(".share-status")));
 }
@@ -277,9 +288,25 @@ function truncateText(value = "", maxLength = 180) {
   const text = String(value).replace(/\s+/g, " ").trim();
   return text.length > maxLength ? `${text.slice(0, maxLength - 1).trim()}…` : text;
 }
+function diaryDateMarkup(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return `<span class="diary-date-full">${escapeHtml(formatDate(value))}</span>`;
+  const date = new Date(`${value}T00:00:00Z`);
+  const weekday = new Intl.DateTimeFormat("fr-FR", { weekday: "long", timeZone: "UTC" }).format(date);
+  return `<span class="diary-date-weekday">${escapeHtml(weekday)}</span><span class="diary-date-day">${match[3]}</span>`;
+}
+function diaryMonth(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-\d{2}$/);
+  if (!match) return { key: "", label: "" };
+  const key = `${match[1]}-${match[2]}`;
+  const date = new Date(`${key}-01T00:00:00Z`);
+  return { key, label: new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" }).format(date) };
+}
 function renderFeaturedReview(post) {
   if (!featuredReview || !post) return;
   const film = post.film || {};
+  const ratingValue = Number(post.rating);
+  const ratingLabel = Number.isFinite(ratingValue) ? ratingValue.toFixed(1) : "--";
   const teaser = truncateText(post.body || "", 170);
   featuredReview.innerHTML = `
     <div class="featured-review-copy">
@@ -287,7 +314,7 @@ function renderFeaturedReview(post) {
       <h2>${escapeHtml(post.title)}</h2>
       <p class="featured-review-title">${escapeHtml(movieTitleFor(post))}</p>
       <p class="featured-review-teaser">${escapeHtml(teaser)}</p>
-      <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span><span class="featured-review-rating" aria-label="Note ${Number(post.rating).toFixed(1)} sur 10"><strong>${Number(post.rating).toFixed(1)}</strong><small>/10</small></span></div>
+      <div class="featured-review-meta"><span>${escapeHtml(formatDate(post.date))}</span><span class="featured-review-rating" style="--rating-rgb: ${ratingTone(ratingValue)}" aria-label="Note ${ratingLabel} sur 10"><strong>${ratingLabel}</strong><small>/10</small></span></div>
     </div>
     <div class="featured-review-cover">${posterFor(post) ? `<img src="${escapeHtml(posterFor(post))}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" />` : ""}</div>
   `;
@@ -307,7 +334,15 @@ function renderDiary(posts, append = false) {
     if (!append) postsList.innerHTML = '<p class="empty-state">Le journal est vide.</p>';
     return;
   }
-  const markup = posts.map((post) => `<button class="diary-row" type="button" data-id="${post.id}"><span class="diary-date">${escapeHtml(formatDate(post.date))}</span>${posterFor(post) ? `<img class="diary-poster" src="${escapeHtml(posterFor(post))}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(movieTitleFor(post))}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`).join("");
+  let previousMonth = append ? postsList.querySelector(".diary-row:last-child")?.dataset.month || "" : "";
+  const markup = posts.map((post) => {
+    const ratingValue = Number(post.rating);
+    const ratingLabel = Number.isFinite(ratingValue) ? ratingValue.toFixed(1) : "--";
+    const month = diaryMonth(post.date);
+    const monthHeading = month.key && month.key !== previousMonth ? `<h3 class="diary-month">${escapeHtml(month.label)}</h3>` : "";
+    if (month.key) previousMonth = month.key;
+    return `${monthHeading}<button class="diary-row" type="button" data-id="${post.id}" data-month="${month.key}"><span class="diary-date">${diaryDateMarkup(post.date)}</span>${posterFor(post) ? `<img class="diary-poster" src="${escapeHtml(posterFor(post))}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(movieTitleFor(post))}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-rating" style="--rating-rgb: ${ratingTone(ratingValue)}" aria-label="Note ${ratingLabel} sur 10"><strong>${ratingLabel}</strong><small>/10</small></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`;
+  }).join("");
   if (append) postsList.insertAdjacentHTML("beforeend", markup); else postsList.innerHTML = markup;
   postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
 }
