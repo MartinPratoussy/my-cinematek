@@ -2766,20 +2766,31 @@ body.modal-open {
     color: #d7b5a9;
     background: rgba(112, 35, 46, .18);
     border-color: #65343b;
+    border-radius: 999px;
+    cursor: pointer;
     font-size: .68rem;
-    transition: background .2s ease, border-color .2s ease, color .2s ease;
+    transition: background .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .2s ease;
 }
 
 .critic-pagination .secondary-btn:hover:not(:disabled),
 .critic-pagination .secondary-btn:focus-visible:not(:disabled) {
     color: #fff0df;
-    background: rgba(158, 70, 82, .5);
-    border-color: #d58d55;
+    background: rgba(219, 177, 99, .12);
+    border-color: #dbb163;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, .2);
+    transform: translateY(-1px);
+}
+
+.critic-pagination .secondary-btn:focus-visible:not(:disabled) {
+    outline: 2px solid rgba(169, 181, 154, .75);
+    outline-offset: 3px;
 }
 
 .critic-pagination .secondary-btn:disabled {
     cursor: default;
     opacity: .35;
+    box-shadow: none;
+    transform: none;
 }
 
 .critic-modal[hidden] {
