@@ -2188,7 +2188,7 @@ body::after {
     border: 0;
     border-left: 4px solid #d58d55;
     border-radius: 0;
-    background: linear-gradient(105deg, #18312e 0%, #203a36 72%, transparent 72%);
+    background: linear-gradient(105deg, #18312e 0%, #203a36 60%, rgba(32, 58, 54, 0) 80%);
     box-shadow: none;
 }
 
@@ -2198,9 +2198,10 @@ body::after {
 
 .featured-review:hover,
 .featured-review:focus-visible {
-    transform: none;
+    transform: translateX(4px);
     border-color: #f0ad72;
-    box-shadow: none;
+    box-shadow: -8px 0 28px rgba(213, 141, 85, .08);
+    outline: none;
 }
 
 .featured-review-copy {

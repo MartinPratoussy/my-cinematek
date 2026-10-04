@@ -160,6 +160,29 @@ function drawStoryText(context, text, x, y, maxWidth, lineHeight, maxLines = 4) 
   lines.slice(0, maxLines).forEach((lineText, index) => context.fillText(lineText, x, y + index * lineHeight));
 }
 
+function roundedRect(context, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.lineTo(x + width - r, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + r);
+  context.lineTo(x + width, y + height - r);
+  context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  context.lineTo(x + r, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - r);
+  context.lineTo(x, y + r);
+  context.quadraticCurveTo(x, y, x + r, y);
+  context.closePath();
+}
+
+function drawLetterSpacingText(context, text, x, y, spacing) {
+  let cursor = x;
+  Array.from(text).forEach((character) => {
+    context.fillText(character, cursor, y);
+    cursor += context.measureText(character).width + spacing;
+  });
+}
+
 function loadStoryPoster(url) {
   return new Promise((resolve) => {
     if (!url) return resolve(null);
@@ -175,41 +198,114 @@ async function createStoryImage(post) {
   canvas.width = 1080;
   canvas.height = 1920;
   const context = canvas.getContext("2d");
-  context.fillStyle = "#120d10";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = "#35171e";
-  context.fillRect(48, 48, canvas.width - 96, canvas.height - 96);
-  context.strokeStyle = "rgba(213, 141, 85, .65)";
-  context.lineWidth = 2;
-  context.strokeRect(72, 72, canvas.width - 144, canvas.height - 144);
 
+  const background = context.createLinearGradient(0, 0, 1080, 1920);
+  background.addColorStop(0, "#0b090a");
+  background.addColorStop(0.52, "#160d10");
+  background.addColorStop(1, "#09080a");
+  context.fillStyle = background;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  const phoneFrame = context.createLinearGradient(0, 0, 1080, 1920);
+  phoneFrame.addColorStop(0, "#111214");
+  phoneFrame.addColorStop(1, "#050506");
+  context.fillStyle = phoneFrame;
+  roundedRect(context, 60, 60, 960, 1800, 96);
+  context.fill();
+
+  context.strokeStyle = "rgba(212, 154, 87, 0.16)";
+  context.lineWidth = 2;
+  roundedRect(context, 80, 80, 920, 1760, 82);
+  context.stroke();
+
+  context.fillStyle = "#0d0b0d";
+  roundedRect(context, 110, 110, 860, 1700, 68);
+  context.fill();
+
+  const accent = context.createLinearGradient(0, 180, 1080, 0);
+  accent.addColorStop(0, "rgba(213, 141, 85, 0.18)");
+  accent.addColorStop(1, "rgba(122, 42, 46, 0)");
+  context.fillStyle = accent;
+  context.fillRect(110, 110, 860, 1700);
+
+  context.fillStyle = "#f4e9db";
+  context.font = "700 25px 'Segoe UI', Arial, sans-serif";
+  drawLetterSpacingText(context, "MY-CINEMATEK", 190, 180, 6);
+
+  context.fillStyle = "#d58d55";
+  context.fillRect(190, 214, 190, 5);
+  context.fillRect(720, 214, 120, 5);
+
+  const posterX = 150;
+  const posterY = 270;
+  const posterWidth = 780;
+  const posterHeight = 980;
   const poster = await loadStoryPoster(posterFor(post));
+
   if (poster) {
-    const posterWidth = 700;
-    const posterHeight = 920;
     const scale = Math.min(posterWidth / poster.width, posterHeight / poster.height);
     const width = poster.width * scale;
     const height = poster.height * scale;
-    context.drawImage(poster, (canvas.width - width) / 2, 150 + (posterHeight - height) / 2, width, height);
+    context.save();
+    roundedRect(context, posterX, posterY, posterWidth, posterHeight, 42);
+    context.clip();
+    context.drawImage(poster, posterX + (posterWidth - width) / 2, posterY + (posterHeight - height) / 2, width, height);
+    context.restore();
+  } else {
+    const fakePoster = context.createLinearGradient(posterX, posterY, posterX + posterWidth, posterY + posterHeight);
+    fakePoster.addColorStop(0, "#1d1114");
+    fakePoster.addColorStop(0.45, "#3d1f20");
+    fakePoster.addColorStop(1, "#09080a");
+    context.fillStyle = fakePoster;
+    roundedRect(context, posterX, posterY, posterWidth, posterHeight, 42);
+    context.fill();
+
+    context.fillStyle = "rgba(255,255,255,0.06)";
+    context.fillRect(posterX + 40, posterY + 40, posterWidth - 80, 180);
+    context.fillStyle = "rgba(244, 233, 219, 0.9)";
+    context.font = "700 42px 'Segoe UI', Arial, sans-serif";
+    context.fillText("MY-CINEMATEK", posterX + 66, posterY + 150);
+
+    context.fillStyle = "#f4e9db";
+    context.font = "600 80px Georgia, 'Times New Roman', serif";
+    drawStoryText(context, movieTitleFor(post), posterX + 60, posterY + 440, 640, 80, 2);
+
+    context.fillStyle = "rgba(212, 154, 87, 0.96)";
+    context.font = "600 28px 'Segoe UI', Arial, sans-serif";
+    context.fillText("film journal", posterX + 66, posterY + 560);
   }
 
+  context.strokeStyle = "rgba(255, 240, 220, 0.12)";
+  context.lineWidth = 2;
+  roundedRect(context, posterX, posterY, posterWidth, posterHeight, 42);
+  context.stroke();
+
+  const contentPanel = context.createLinearGradient(0, 1280, 1080, 1920);
+  contentPanel.addColorStop(0, "rgba(16, 12, 14, 0.28)");
+  contentPanel.addColorStop(1, "rgba(16, 12, 14, 0.94)");
+  context.fillStyle = contentPanel;
+  roundedRect(context, 150, 1290, 780, 420, 36);
+  context.fill();
+
   context.fillStyle = "#d58d55";
-  context.font = "600 28px Arial, sans-serif";
-  context.letterSpacing = "8px";
-  context.fillText("MY-CINEMATEK", 120, 1220);
-  context.letterSpacing = "0px";
+  context.fillRect(190, 1358, 120, 4);
+
   context.fillStyle = "#f4e9db";
-  context.font = "500 68px Georgia, serif";
-  drawStoryText(context, movieTitleFor(post), 120, 1330, 840, 78, 2);
-  context.fillStyle = "#d7b5a9";
-  context.font = "48px Georgia, serif";
-  drawStoryText(context, post.title, 120, 1510, 840, 46, 3);
-  context.fillStyle = "#f0ad72";
-  context.font = "600 54px Georgia, serif";
-  context.fillText(`${Number(post.rating).toFixed(1)} / 10`, 120, 1715);
-  context.fillStyle = "#c3a59d";
-  context.font = "24px Arial, sans-serif";
-  context.fillText("Lire la critique sur my-cinematek", 120, 1800);
+  context.font = "600 40px Georgia, 'Times New Roman', serif";
+  drawStoryText(context, movieTitleFor(post), 190, 1464, 560, 40, 2);
+
+  context.fillStyle = "#c3b4a4";
+  context.font = "italic 24px Georgia, 'Times New Roman', serif";
+  drawStoryText(context, post.title || "Critique", 190, 1540, 580, 24, 2);
+
+  context.fillStyle = "#f4e9db";
+  context.font = "600 25px 'Segoe UI', Arial, sans-serif";
+  context.fillText(`note ${Number(post.rating).toFixed(1)}/10`, 190, 1650);
+
+  context.fillStyle = "#9d8179";
+  context.font = "600 18px 'Segoe UI', Arial, sans-serif";
+  context.fillText("my-cinematek", 190, 1732);
+  context.fillText(new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date()), 730, 1732);
 
   return new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Story image unavailable.")), "image/png"));
 }
