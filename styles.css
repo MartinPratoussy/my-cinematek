@@ -2289,6 +2289,7 @@ body::after {
 }
 
 .watched-shelf {
+    border: 0;
     border-top: 1px solid rgba(213, 141, 85, .55);
     border-radius: 0;
     background: transparent;
