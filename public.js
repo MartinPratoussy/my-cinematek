@@ -183,6 +183,61 @@ function drawLetterSpacingText(context, text, x, y, spacing) {
   });
 }
 
+function drawStoryStars(context, rating, x, y) {
+  const boundedRating = Math.max(0, Math.min(10, Number(rating) || 0));
+  const halfStarSteps = Math.round(boundedRating);
+  const outerRadius = 25;
+  const innerRadius = 11;
+
+  for (let index = 0; index < 5; index += 1) {
+    const centerX = x + index * 62;
+    const centerY = y;
+    const points = [];
+    for (let point = 0; point < 10; point += 1) {
+      const angle = -Math.PI / 2 + point * Math.PI / 5;
+      const radius = point % 2 === 0 ? outerRadius : innerRadius;
+      points.push([centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius]);
+    }
+
+    context.beginPath();
+    points.forEach(([pointX, pointY], pointIndex) => {
+      if (pointIndex === 0) context.moveTo(pointX, pointY);
+      else context.lineTo(pointX, pointY);
+    });
+    context.closePath();
+    context.fillStyle = "rgba(212, 154, 87, 0.12)";
+    context.fill();
+
+    if (halfStarSteps > index * 2) {
+      context.save();
+      if (halfStarSteps === index * 2 + 1) {
+        context.beginPath();
+        context.rect(centerX - outerRadius, centerY - outerRadius, outerRadius, outerRadius * 2);
+        context.clip();
+      }
+      context.beginPath();
+      points.forEach(([pointX, pointY], pointIndex) => {
+        if (pointIndex === 0) context.moveTo(pointX, pointY);
+        else context.lineTo(pointX, pointY);
+      });
+      context.closePath();
+      context.fillStyle = "#d49a57";
+      context.fill();
+      context.restore();
+    }
+
+    context.beginPath();
+    points.forEach(([pointX, pointY], pointIndex) => {
+      if (pointIndex === 0) context.moveTo(pointX, pointY);
+      else context.lineTo(pointX, pointY);
+    });
+    context.closePath();
+    context.strokeStyle = "rgba(212, 154, 87, 0.8)";
+    context.lineWidth = 2;
+    context.stroke();
+  }
+}
+
 function loadStoryPoster(url) {
   return new Promise((resolve) => {
     if (!url) return resolve(null);
@@ -206,59 +261,38 @@ async function createStoryImage(post) {
   context.fillStyle = background;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  const phoneFrame = context.createLinearGradient(0, 0, 1080, 1920);
-  phoneFrame.addColorStop(0, "#111214");
-  phoneFrame.addColorStop(1, "#050506");
-  context.fillStyle = phoneFrame;
-  roundedRect(context, 60, 60, 960, 1800, 96);
-  context.fill();
-
-  context.strokeStyle = "rgba(212, 154, 87, 0.16)";
-  context.lineWidth = 2;
-  roundedRect(context, 80, 80, 920, 1760, 82);
-  context.stroke();
-
-  context.fillStyle = "#0d0b0d";
-  roundedRect(context, 110, 110, 860, 1700, 68);
-  context.fill();
-
-  const accent = context.createLinearGradient(0, 180, 1080, 0);
-  accent.addColorStop(0, "rgba(213, 141, 85, 0.18)");
+  const accent = context.createRadialGradient(760, 530, 40, 760, 530, 900);
+  accent.addColorStop(0, "rgba(213, 141, 85, 0.16)");
+  accent.addColorStop(0.5, "rgba(122, 42, 46, 0.08)");
   accent.addColorStop(1, "rgba(122, 42, 46, 0)");
   context.fillStyle = accent;
-  context.fillRect(110, 110, 860, 1700);
+  context.fillRect(0, 0, canvas.width, canvas.height);
 
   context.fillStyle = "#f4e9db";
   context.font = "700 25px 'Segoe UI', Arial, sans-serif";
-  drawLetterSpacingText(context, "MY-CINEMATEK", 190, 180, 6);
+  drawLetterSpacingText(context, "MY-CINEMATEK", 150, 180, 6);
 
   context.fillStyle = "#d58d55";
-  context.fillRect(190, 214, 190, 5);
-  context.fillRect(720, 214, 120, 5);
+  context.fillRect(150, 214, 150, 5);
 
   const posterX = 150;
   const posterY = 270;
   const posterWidth = 780;
-  const posterHeight = 980;
+  const posterHeight = 1170;
   const poster = await loadStoryPoster(posterFor(post));
 
   if (poster) {
     const scale = Math.min(posterWidth / poster.width, posterHeight / poster.height);
     const width = poster.width * scale;
     const height = poster.height * scale;
-    context.save();
-    roundedRect(context, posterX, posterY, posterWidth, posterHeight, 42);
-    context.clip();
     context.drawImage(poster, posterX + (posterWidth - width) / 2, posterY + (posterHeight - height) / 2, width, height);
-    context.restore();
   } else {
     const fakePoster = context.createLinearGradient(posterX, posterY, posterX + posterWidth, posterY + posterHeight);
     fakePoster.addColorStop(0, "#1d1114");
     fakePoster.addColorStop(0.45, "#3d1f20");
     fakePoster.addColorStop(1, "#09080a");
     context.fillStyle = fakePoster;
-    roundedRect(context, posterX, posterY, posterWidth, posterHeight, 42);
-    context.fill();
+    context.fillRect(posterX, posterY, posterWidth, posterHeight);
 
     context.fillStyle = "rgba(255,255,255,0.06)";
     context.fillRect(posterX + 40, posterY + 40, posterWidth - 80, 180);
@@ -268,44 +302,30 @@ async function createStoryImage(post) {
 
     context.fillStyle = "#f4e9db";
     context.font = "600 80px Georgia, 'Times New Roman', serif";
-    drawStoryText(context, movieTitleFor(post), posterX + 60, posterY + 440, 640, 80, 2);
+    drawStoryText(context, movieTitleFor(post), posterX + 60, posterY + 500, 640, 80, 2);
 
     context.fillStyle = "rgba(212, 154, 87, 0.96)";
     context.font = "600 28px 'Segoe UI', Arial, sans-serif";
-    context.fillText("film journal", posterX + 66, posterY + 560);
+    context.fillText("film journal", posterX + 66, posterY + 620);
   }
 
-  context.strokeStyle = "rgba(255, 240, 220, 0.12)";
-  context.lineWidth = 2;
-  roundedRect(context, posterX, posterY, posterWidth, posterHeight, 42);
-  context.stroke();
-
-  const contentPanel = context.createLinearGradient(0, 1280, 1080, 1920);
-  contentPanel.addColorStop(0, "rgba(16, 12, 14, 0.28)");
-  contentPanel.addColorStop(1, "rgba(16, 12, 14, 0.94)");
-  context.fillStyle = contentPanel;
-  roundedRect(context, 150, 1290, 780, 420, 36);
-  context.fill();
-
   context.fillStyle = "#d58d55";
-  context.fillRect(190, 1358, 120, 4);
+  context.fillRect(150, 1470, 120, 4);
 
   context.fillStyle = "#f4e9db";
-  context.font = "600 40px Georgia, 'Times New Roman', serif";
-  drawStoryText(context, movieTitleFor(post), 190, 1464, 560, 40, 2);
+  context.font = "600 42px Georgia, 'Times New Roman', serif";
+  drawStoryText(context, movieTitleFor(post), 150, 1540, 780, 42, 1);
 
   context.fillStyle = "#c3b4a4";
-  context.font = "italic 24px Georgia, 'Times New Roman', serif";
-  drawStoryText(context, post.title || "Critique", 190, 1540, 580, 24, 2);
+  context.font = "italic 25px Georgia, 'Times New Roman', serif";
+  drawStoryText(context, post.title || "Critique", 150, 1590, 780, 25, 1);
 
-  context.fillStyle = "#f4e9db";
-  context.font = "600 25px 'Segoe UI', Arial, sans-serif";
-  context.fillText(`note ${Number(post.rating).toFixed(1)}/10`, 190, 1650);
+  drawStoryStars(context, post.rating, 416, 1668);
 
   context.fillStyle = "#9d8179";
   context.font = "600 18px 'Segoe UI', Arial, sans-serif";
-  context.fillText("my-cinematek", 190, 1732);
-  context.fillText(new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date()), 730, 1732);
+  context.fillText("my-cinematek", 150, 1750);
+  context.fillText(new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "long", year: "numeric" }).format(new Date()), 730, 1750);
 
   return new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Story image unavailable.")), "image/png"));
 }
