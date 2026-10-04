@@ -369,10 +369,21 @@ async function shareCritic(post, button, status) {
   }
 }
 
+function readingBodyMarkup(value) {
+  return String(value || "")
+    .replace(/\r\n?/g, "\n")
+    .split(/\n{2,}/)
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
 function criticMarkup(post) {
   const film = post.film || {};
   const poster = posterFor(film);
-  return `<section class="film-information"><p class="eyebrow">le film</p><div class="modal-film-heading">${poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div><h2 id="modal-title">${escapeHtml(movieTitleFor(post))}</h2><p>${escapeHtml(film.year || "")}</p></div></div>${technicalFacts(film)}</section>${viewingContextMarkup(post)}<section class="critic-text"><p class="eyebrow">la critique</p><div class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br><br>")}</div></section><section class="critic-conclusion"><p class="eyebrow">conclusion</p><div class="post-body">${escapeHtml(post.conclusion || "").replace(/\n/g, "<br><br>")}</div><strong class="rating">${Number(post.rating).toFixed(1)}<small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
+  const ratingValue = Number(post.rating);
+  const ratingLabel = Number.isFinite(ratingValue) ? ratingValue.toFixed(1) : "--";
+  return `<header class="critic-reading-heading"><div class="modal-film-heading">${poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div class="critic-heading-copy"><p class="eyebrow">la critique</p><h2 id="modal-title">${escapeHtml(post.title || movieTitleFor(post))}</h2><p class="critic-film-title">${escapeHtml(movieTitleFor(post))}${film.year ? ` <span aria-hidden="true">·</span> ${escapeHtml(film.year)}` : ""}</p></div></div></header>${viewingContextMarkup(post)}<section class="critic-text"><div class="post-body">${readingBodyMarkup(post.body)}</div></section><section class="critic-conclusion"><div class="critic-conclusion-copy"><p class="eyebrow">conclusion</p><div class="post-body">${readingBodyMarkup(post.conclusion)}</div></div><strong class="rating" aria-label="Note ${ratingLabel} sur 10"><span>${ratingLabel}</span><small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
 }
 function bindCriticModal(post) {
   modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle }));
