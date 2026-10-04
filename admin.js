@@ -13,6 +13,11 @@ const selectedFilm = document.getElementById("selected-film");
 const filmData = document.getElementById("film-data");
 const cancelEdit = document.getElementById("cancel-edit");
 const adminPostList = document.getElementById("admin-post-list");
+const adminPostSearch = document.getElementById("admin-post-search");
+const adminPostPrev = document.getElementById("admin-post-prev");
+const adminPostNext = document.getElementById("admin-post-next");
+const adminPostPageLabel = document.getElementById("admin-post-page-label");
+const adminPostCount = document.getElementById("admin-post-count");
 const watchedForm = document.getElementById("watched-form");
 const watchedFilmSearch = document.getElementById("watched-film-search");
 const watchedFilmResults = document.getElementById("watched-film-results");
@@ -39,6 +44,9 @@ const TAG_PRESETS = ["horror", "drama", "comedy", "thriller", "romance", "scienc
 let authorSecret = "";
 let editingPostId = null;
 let selectedFilmData = null;
+let adminPosts = [];
+let adminPostPage = 0;
+const ADMIN_POST_PAGE_SIZE = 8;
 let watchedFilmTimer;
 let filmSearchTimer;
 let venueSearchTimer;
@@ -98,9 +106,15 @@ function posterUrl(path) {
 }
 
 async function loadPosts() {
-  const response = await fetch("/api/posts");
-  if (!response.ok) throw new Error("Les critiques n’ont pas pu être chargées.");
-  return readJson(response);
+  const allPosts = [];
+  const pageSize = 50;
+  for (let offset = 0; ; offset += pageSize) {
+    const response = await fetch(`/api/posts?limit=${pageSize}&offset=${offset}`);
+    if (!response.ok) throw new Error("Les critiques n’ont pas pu être chargées.");
+    const posts = await readJson(response);
+    allPosts.push(...posts);
+    if (posts.length < pageSize) return allPosts;
+  }
 }
 
 async function authenticate(password) {
@@ -237,15 +251,34 @@ function editPost(post) {
   selectedFilm.classList.remove("hidden");
   document.getElementById("publish-button").textContent = "Enregistrer les modifications";
   cancelEdit.classList.remove("hidden");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  editorStatus.textContent = `Modification de « ${post.title} ».`;
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function loadAdminPosts() {
-  const posts = await loadPosts();
-  adminPostList.innerHTML = posts.length ? posts.map((post) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(post.date)}</p><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.movieTitle)}</p></div><div class="admin-entry-actions"><button type="button" class="secondary-btn" data-action="edit" data-id="${post.id}">Modifier</button><button type="button" class="danger-btn" data-action="delete" data-id="${post.id}">Supprimer</button></div></article>`).join("") : '<p class="empty-state">Aucune critique publiée.</p>';
+  adminPosts = await loadPosts();
+  adminPostPage = 0;
+  renderAdminPosts();
+}
+
+function renderAdminPosts() {
+  const query = adminPostSearch.value.trim().toLowerCase();
+  const filteredPosts = adminPosts.filter((post) => {
+    const fields = [post.title, post.movieTitle, post.date, post.context, post.venue?.name, ...(post.tags || [])];
+    return fields.filter(Boolean).join(" ").toLowerCase().includes(query);
+  });
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / ADMIN_POST_PAGE_SIZE));
+  adminPostPage = Math.min(adminPostPage, totalPages - 1);
+  const visiblePosts = filteredPosts.slice(adminPostPage * ADMIN_POST_PAGE_SIZE, (adminPostPage + 1) * ADMIN_POST_PAGE_SIZE);
+  adminPostCount.textContent = `${filteredPosts.length} ${filteredPosts.length === 1 ? "critique" : "critiques"}`;
+  adminPostPageLabel.textContent = `Page ${adminPostPage + 1} / ${totalPages}`;
+  adminPostPrev.disabled = adminPostPage === 0;
+  adminPostNext.disabled = adminPostPage >= totalPages - 1;
+  adminPostList.innerHTML = visiblePosts.length ? visiblePosts.map((post) => `<article class="admin-post"><div><p class="eyebrow">${escapeHtml(post.date)}</p><h3>${escapeHtml(post.title)}</h3><p>${escapeHtml(post.movieTitle)}</p></div><div class="admin-entry-actions"><button type="button" class="secondary-btn" data-action="edit" data-id="${post.id}">Modifier</button><button type="button" class="danger-btn" data-action="delete" data-id="${post.id}">Supprimer</button></div></article>`).join("") : '<p class="empty-state">Aucune critique ne correspond à cette recherche.</p>';
   adminPostList.querySelectorAll("button").forEach((button) => button.addEventListener("click", async () => {
     if (button.dataset.action === "delete") return deleteEntry(`/api/posts/${button.dataset.id}`, `Supprimer la critique « ${button.closest(".admin-post").querySelector("h3").textContent} » ?`, loadAdminPosts);
-    editPost((await loadPosts()).find((post) => post.id === Number(button.dataset.id)));
+    const post = adminPosts.find((item) => item.id === Number(button.dataset.id));
+    if (post) editPost(post);
   }));
 }
 
@@ -380,6 +413,20 @@ watchedAdminPrev.addEventListener("click", () => {
 });
 watchedAdminNext.addEventListener("click", () => {
   if (watchedAdminCurrentItems.length === WATCHED_ADMIN_PAGE_SIZE) loadWatchedAdmin(watchedAdminPage + 1);
+});
+adminPostSearch.addEventListener("input", () => {
+  adminPostPage = 0;
+  renderAdminPosts();
+});
+adminPostPrev.addEventListener("click", () => {
+  if (adminPostPage > 0) {
+    adminPostPage -= 1;
+    renderAdminPosts();
+  }
+});
+adminPostNext.addEventListener("click", () => {
+  adminPostPage += 1;
+  renderAdminPosts();
 });
 watchedFilmSearch.addEventListener("input", () => { clearTimeout(watchedFilmTimer); watchedFilmTimer = setTimeout(searchWatchedFilms, 300); });
 letterboxdSyncButton.addEventListener("click", syncLetterboxd);

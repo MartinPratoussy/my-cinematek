@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Administration | my-cinematek</title>
-    <link rel="stylesheet" href="styles.css?v=20260930-admin-01" />
+    <link rel="stylesheet" href="styles.css?v=20261005-admin-02" />
 </head>
 
 <body>
@@ -45,11 +45,34 @@
             <p id="editor-status" class="editor-status" aria-live="polite"></p>
 
             <nav class="admin-quick-nav" aria-label="Raccourcis de l’espace auteur">
+                <a href="#published-reviews">Critiques publiées</a>
                 <a href="#review-form">Nouvelle critique</a>
                 <a href="#watched-form">Ajouter un visionnage</a>
                 <a href="#watched-admin-list">Visionnages enregistrés</a>
-                <a href="#admin-post-list">Critiques publiées</a>
             </nav>
+
+            <section id="published-reviews" class="admin-posts admin-review-library">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">bibliothèque</p>
+                        <h2>Critiques publiées</h2>
+                    </div>
+                    <span id="admin-post-count" class="admin-post-count" aria-live="polite"></span>
+                </div>
+                <div class="admin-toolbar">
+                    <label class="admin-search-field">
+                        <span>Rechercher par titre, film ou date</span>
+                        <input id="admin-post-search" type="search" placeholder="Ex. Perfect Days, 2026-09…"
+                            autocomplete="off" />
+                    </label>
+                    <div class="pager-controls" aria-label="Navigation des critiques">
+                        <button id="admin-post-prev" class="secondary-btn" type="button" disabled>Précédentes</button>
+                        <span id="admin-post-page-label">Page 1</span>
+                        <button id="admin-post-next" class="secondary-btn" type="button" disabled>Suivantes</button>
+                    </div>
+                </div>
+                <div id="admin-post-list" class="admin-post-list" aria-live="polite"></div>
+            </section>
 
             <div class="admin-workspace">
             <form id="review-form" class="panel admin-form">
@@ -171,16 +194,9 @@
                 <div id="watched-admin-list"></div>
             </section>
 
-            <section class="admin-posts">
-                <div class="section-head">
-                    <p class="eyebrow">publiées</p>
-                    <h2>Vos critiques</h2>
-                </div>
-                <div id="admin-post-list" class="admin-post-list"></div>
-            </section>
         </section>
     </main>
-    <script src="admin.js?v=20260925-03"></script>
+    <script src="admin.js?v=20261005-admin-01"></script>
 </body>
 
 </html>
