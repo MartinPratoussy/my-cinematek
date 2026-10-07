@@ -110,7 +110,8 @@ function technicalFacts(film) {
 }
 function filmDetailsMarkup(film) {
   const poster = posterFor(film);
-  return `<div class="film-details"><div class="film-details-heading">${poster ? `<img class="film-details-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(film))}" />` : ""}<div><p class="eyebrow">détails du film</p><h2 id="film-modal-title">${escapeHtml(movieTitleFor(film))}</h2>${film.tagline ? `<p class="film-tagline">${escapeHtml(film.tagline)}</p>` : ""}</div></div>${technicalFacts(film)}${film.overview ? `<section class="film-overview-block"><p class="eyebrow">synopsis</p><p>${escapeHtml(film.overview)}</p></section>` : ""}${film.homepage ? `<a class="venue-map-button film-homepage" href="${escapeHtml(film.homepage)}" target="_blank" rel="noreferrer">Voir la fiche officielle</a>` : ""}</div>`;
+  const year = film.year || (film.releaseDate || "").slice(0, 4);
+  return `<div class="film-details"><div class="film-details-heading">${poster ? `<img class="film-details-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(film))}" />` : ""}<div><p class="eyebrow">détails du film</p><h2 id="film-modal-title">${escapeHtml(movieTitleFor(film))}</h2>${year ? `<p class="critic-film-title">${escapeHtml(year)}</p>` : ""}${film.tagline ? `<p class="film-tagline">${escapeHtml(film.tagline)}</p>` : ""}</div></div>${technicalFacts(film)}${film.overview ? `<section class="film-overview-block"><p class="eyebrow">synopsis</p><p>${escapeHtml(film.overview)}</p></section>` : ""}${film.homepage ? `<a class="venue-map-button film-homepage" href="${escapeHtml(film.homepage)}" target="_blank" rel="noreferrer">Voir la fiche officielle</a>` : ""}</div>`;
 }
 async function openFilmModal(film) {
   const details = await loadFilmDetails(film);
