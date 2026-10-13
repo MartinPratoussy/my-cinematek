@@ -3450,11 +3450,21 @@ body.modal-open {
 
 @media (max-width: 700px) {
     .critic-modal {
-        padding: .65rem;
+        bottom: auto;
+        height: 100vh;
+        height: 100svh;
+        height: 100dvh;
+        padding: calc(.65rem + env(safe-area-inset-top, 0px))
+            calc(.65rem + env(safe-area-inset-right, 0px))
+            calc(.65rem + env(safe-area-inset-bottom, 0px))
+            calc(.65rem + env(safe-area-inset-left, 0px));
+        grid-template-rows: minmax(0, 1fr);
     }
 
     .critic-modal-dialog {
-        max-height: 94vh;
+        min-height: 0;
+        max-height: 100%;
+        overscroll-behavior-y: contain;
         padding: 3.1rem 1rem 1.25rem;
     }
 
