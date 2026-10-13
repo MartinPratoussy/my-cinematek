@@ -116,6 +116,15 @@
                 <label>Contexte<input id="context" type="text" placeholder="Note facultative sur la séance" /></label>
                 <label>Votre critique<textarea id="review-body" rows="12" placeholder="Écrivez ce qui vous est resté."
                         required></textarea></label>
+                <section class="review-photo-editor" aria-labelledby="review-photos-title">
+                    <div>
+                        <h3 id="review-photos-title">Photos de la séance</h3>
+                        <p class="field-hint">Ajoutez jusqu’à 8 photos, une légende et leur position dans le texte.</p>
+                    </div>
+                    <label>Ajouter des photos<input id="review-photos-input" type="file" accept="image/*" multiple /></label>
+                    <div id="review-photo-drafts" class="review-photo-drafts"></div>
+                    <p id="review-photos-status" class="field-hint" aria-live="polite"></p>
+                </section>
                 <label>Conclusion<textarea id="conclusion" rows="4" placeholder="Votre dernière pensée avant la note."
                         required></textarea></label>
                 <div class="form-actions">

@@ -38,12 +38,17 @@ const venueName = document.getElementById("venue-name");
 const venueLocation = document.getElementById("venue-location");
 const venueNameField = document.getElementById("venue-name-field");
 const venueResults = document.getElementById("venue-results");
+const reviewPhotosInput = document.getElementById("review-photos-input");
+const reviewPhotoDrafts = document.getElementById("review-photo-drafts");
+const reviewPhotosStatus = document.getElementById("review-photos-status");
 
 const TAG_PRESETS = ["horror", "drama", "comedy", "thriller", "romance", "science fiction", "animation", "documentary", "rewatch", "classic"];
 
 let authorSecret = "";
 let editingPostId = null;
 let selectedFilmData = null;
+let reviewPhotos = [];
+let photoProcessing = false;
 let adminPosts = [];
 let adminPostPage = 0;
 const ADMIN_POST_PAGE_SIZE = 8;
@@ -133,6 +138,10 @@ function showEditor() {
 function resetForm() {
   editingPostId = null;
   selectedFilmData = null;
+  reviewPhotos = [];
+  reviewPhotoDrafts.innerHTML = "";
+  reviewPhotosStatus.textContent = "";
+  reviewPhotosInput.value = "";
   form.reset();
   filmData.value = "";
   selectedFilm.innerHTML = "";
@@ -141,6 +150,29 @@ function resetForm() {
   document.getElementById("publish-button").textContent = "Publier la critique";
   cancelEdit.classList.add("hidden");
   updateVenueFields();
+}
+
+function renderReviewPhotos() {
+  const paragraphCount = Math.max(1, document.getElementById("review-body").value.split(/\n{2,}/).filter(Boolean).length);
+  reviewPhotos = reviewPhotos.map((photo) => ({ ...photo, afterParagraph: Math.min(Math.max(Number(photo.afterParagraph) || paragraphCount, 1), paragraphCount) }));
+  reviewPhotoDrafts.innerHTML = reviewPhotos.map((photo, index) => `<article class="review-photo-draft"><img src="${escapeHtml(photo.src)}" alt="" /><div class="review-photo-fields"><label>Légende de la photo<input type="text" data-photo-caption="${index}" value="${escapeHtml(photo.caption)}" placeholder="Ex. Rencontre avec l’équipe du film" /></label><label>Afficher après<select data-photo-position="${index}">${Array.from({ length: paragraphCount }, (_, paragraphIndex) => `<option value="${paragraphIndex + 1}"${photo.afterParagraph === paragraphIndex + 1 ? " selected" : ""}>Paragraphe ${paragraphIndex + 1}</option>`).join("")}</select></label></div><button class="danger-btn" type="button" data-remove-photo="${index}" aria-label="Retirer cette photo">Retirer</button></article>`).join("");
+}
+
+async function compressReviewPhoto(file) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error("Compression impossible.")), "image/jpeg", 0.82));
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({ src: reader.result, caption: "", afterParagraph: Math.max(1, document.getElementById("review-body").value.split(/\n{2,}/).filter(Boolean).length) });
+    reader.onerror = () => reject(new Error("Lecture de la photo impossible."));
+    reader.readAsDataURL(blob);
+  });
 }
 
 async function selectFilm(film) {
@@ -246,6 +278,9 @@ function editPost(post) {
   venueLocation.value = post.venue?.location || "";
   updateVenueFields();
   document.getElementById("review-body").value = post.body;
+  const paragraphCount = Math.max(1, post.body.split(/\n{2,}/).filter(Boolean).length);
+  reviewPhotos = (post.photos || []).map((photo) => ({ src: photo.src, caption: photo.caption || "", afterParagraph: photo.afterParagraph || paragraphCount }));
+  renderReviewPhotos();
   document.getElementById("conclusion").value = post.conclusion || "";
   selectedFilm.innerHTML = `${selectedFilmData.poster ? `<img src="${escapeHtml(selectedFilmData.poster)}" alt="" />` : ""}<div><p class="eyebrow">film sélectionné</p><h3>${escapeHtml(post.movieTitle)}</h3><p>${escapeHtml(selectedFilmData.year || "")}</p></div>`;
   selectedFilm.classList.remove("hidden");
@@ -394,10 +429,49 @@ watchedVenueName.addEventListener("input", () => {
   venueSearchTimer = setTimeout(searchWatchedVenues, 350);
 });
 cancelEdit.addEventListener("click", resetForm);
+reviewPhotosInput.addEventListener("change", async () => {
+  const files = [...reviewPhotosInput.files];
+  reviewPhotosInput.value = "";
+  const remaining = 8 - reviewPhotos.length;
+  if (files.length > remaining) reviewPhotosStatus.textContent = `Vous pouvez encore ajouter ${remaining} photo${remaining > 1 ? "s" : ""} (8 maximum).`;
+  if (remaining <= 0) return;
+  photoProcessing = true;
+  try {
+    for (const file of files.slice(0, remaining)) {
+      if (!file.type.startsWith("image/")) continue;
+      reviewPhotos.push(await compressReviewPhoto(file));
+    }
+    renderReviewPhotos();
+    if (reviewPhotos.length < 8 && !reviewPhotosStatus.textContent) reviewPhotosStatus.textContent = "Photos prêtes.";
+  } catch (error) {
+    reviewPhotosStatus.textContent = error.message;
+  } finally {
+    photoProcessing = false;
+  }
+});
+reviewPhotoDrafts.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-photo-caption]");
+  if (input) reviewPhotos[Number(input.dataset.photoCaption)].caption = input.value;
+});
+reviewPhotoDrafts.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-photo-position]");
+  if (select) reviewPhotos[Number(select.dataset.photoPosition)].afterParagraph = Number(select.value);
+});
+document.getElementById("review-body").addEventListener("input", () => {
+  if (reviewPhotos.length) renderReviewPhotos();
+});
+reviewPhotoDrafts.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-photo]");
+  if (!button) return;
+  reviewPhotos.splice(Number(button.dataset.removePhoto), 1);
+  renderReviewPhotos();
+  reviewPhotosStatus.textContent = "Photo retirée.";
+});
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (photoProcessing) { reviewPhotosStatus.textContent = "Attendez la fin de la préparation des photos."; return; }
   const savedFilm = selectedFilmData || (filmData.value ? JSON.parse(filmData.value) : null);
-  const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), venue: { type: venueType.value, name: venueType.value === "home" ? "Ma TV" : venueName.value.trim(), location: venueType.value === "home" ? "" : venueLocation.value.trim() }, tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), conclusion: document.getElementById("conclusion").value.trim(), film: savedFilm };
+  const post = { title: document.getElementById("review-title").value.trim(), movieTitle: document.getElementById("movie-title").value.trim(), date: document.getElementById("watch-date").value, rating: Number(document.getElementById("rating").value), context: document.getElementById("context").value.trim(), venue: { type: venueType.value, name: venueType.value === "home" ? "Ma TV" : venueName.value.trim(), location: venueType.value === "home" ? "" : venueLocation.value.trim() }, tags: document.getElementById("tags").value.split(",").map((tag) => tag.trim()).filter(Boolean), body: document.getElementById("review-body").value.trim(), conclusion: document.getElementById("conclusion").value.trim(), film: savedFilm, photos: reviewPhotos.map((photo) => ({ ...photo, afterParagraph: Number(photo.afterParagraph) })) };
   if (!post.title || !post.movieTitle || !post.date || !post.body || !post.conclusion || !savedFilm?.title) { editorStatus.textContent = "Choisissez un film et complétez la critique."; return; }
   const response = await fetch(editingPostId ? `/api/posts/${editingPostId}` : "/api/posts", { method: editingPostId ? "PUT" : "POST", headers: { "Content-Type": "application/json", "X-Author-Password": authorSecret }, body: JSON.stringify(post) });
   if (!response.ok) { editorStatus.textContent = "La critique n’a pas pu être enregistrée."; return; }

@@ -370,13 +370,16 @@ async function shareCritic(post, button, status) {
   }
 }
 
-function readingBodyMarkup(value) {
-  return String(value || "")
-    .replace(/\r\n?/g, "\n")
-    .split(/\n{2,}/)
-    .filter(Boolean)
-    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
-    .join("");
+function readingBodyMarkup(value, photos = []) {
+  const paragraphs = String(value || "").replace(/\r\n?/g, "\n").split(/\n{2,}/).filter(Boolean);
+  return paragraphs.map((paragraph, paragraphIndex) => {
+    const placedPhotos = photos.filter((photo) => {
+      const position = Number(photo.afterParagraph) || paragraphs.length;
+      return Math.min(Math.max(position, 1), paragraphs.length) === paragraphIndex + 1;
+    });
+    const figures = placedPhotos.map((photo) => `<figure class="critic-photo"><img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.caption || "Photo de la séance")}" loading="lazy" />${photo.caption ? `<figcaption>${escapeHtml(photo.caption)}</figcaption>` : ""}</figure>`).join("");
+    return `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>${figures}`;
+  }).join("");
 }
 
 function criticMarkup(post) {
@@ -384,7 +387,8 @@ function criticMarkup(post) {
   const poster = posterFor(film);
   const ratingValue = Number(post.rating);
   const ratingLabel = Number.isFinite(ratingValue) ? ratingValue.toFixed(1) : "--";
-  return `<header class="critic-reading-heading"><div class="modal-film-heading">${poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div class="critic-heading-copy"><p class="eyebrow">la critique</p><h2 id="modal-title">${escapeHtml(post.title || movieTitleFor(post))}</h2><p class="critic-film-title">${escapeHtml(movieTitleFor(post))}${film.year ? ` <span aria-hidden="true">·</span> ${escapeHtml(film.year)}` : ""}</p></div></div></header>${viewingContextMarkup(post)}<section class="critic-text"><div class="post-body">${readingBodyMarkup(post.body)}</div></section><section class="critic-conclusion"><div class="critic-conclusion-copy"><p class="eyebrow">conclusion</p><div class="post-body">${readingBodyMarkup(post.conclusion)}</div></div><strong class="rating" aria-label="Note ${ratingLabel} sur 10"><span>${ratingLabel}</span><small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
+  const photos = (post.photos || []).filter((photo) => photo.src);
+  return `<header class="critic-reading-heading"><div class="modal-film-heading">${poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div class="critic-heading-copy"><p class="eyebrow">la critique</p><h2 id="modal-title">${escapeHtml(post.title || movieTitleFor(post))}</h2><p class="critic-film-title">${escapeHtml(movieTitleFor(post))}${film.year ? ` <span aria-hidden="true">·</span> ${escapeHtml(film.year)}` : ""}</p></div></div></header>${viewingContextMarkup(post)}<section class="critic-text"><div class="post-body">${readingBodyMarkup(post.body, photos)}</div></section><section class="critic-conclusion"><div class="critic-conclusion-copy"><p class="eyebrow">conclusion</p><div class="post-body">${readingBodyMarkup(post.conclusion)}</div></div><strong class="rating" aria-label="Note ${ratingLabel} sur 10"><span>${ratingLabel}</span><small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
 }
 function bindCriticModal(post) {
   modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle }));

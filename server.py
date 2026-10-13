@@ -75,8 +75,8 @@ class Database:
     def init_schema(self):
         print("Checking database schema...", flush=True)
         identity = "SERIAL PRIMARY KEY" if self.postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
-        self.query(f"CREATE TABLE IF NOT EXISTS posts (id {identity}, title TEXT NOT NULL, movie_title TEXT NOT NULL, watched_date TEXT NOT NULL, rating REAL NOT NULL, context TEXT, venue TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL, body TEXT NOT NULL, conclusion TEXT NOT NULL DEFAULT '', film TEXT NOT NULL)")
-        for column, definition in (("venue", "TEXT NOT NULL DEFAULT ''"), ("conclusion", "TEXT NOT NULL DEFAULT ''")):
+        self.query(f"CREATE TABLE IF NOT EXISTS posts (id {identity}, title TEXT NOT NULL, movie_title TEXT NOT NULL, watched_date TEXT NOT NULL, rating REAL NOT NULL, context TEXT, venue TEXT NOT NULL DEFAULT '', tags TEXT NOT NULL, body TEXT NOT NULL, conclusion TEXT NOT NULL DEFAULT '', film TEXT NOT NULL, photos TEXT NOT NULL DEFAULT '[]')")
+        for column, definition in (("venue", "TEXT NOT NULL DEFAULT ''"), ("conclusion", "TEXT NOT NULL DEFAULT ''"), ("photos", "TEXT NOT NULL DEFAULT '[]'")):
             try:
                 self.query(f"ALTER TABLE posts ADD COLUMN {column} {definition}")
             except Exception:
@@ -141,8 +141,8 @@ class Database:
         self.query("DELETE FROM watched_films WHERE id = ?", (item_id,))
 
     def insert_post(self, post):
-        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})))
-        statement = "INSERT INTO posts (title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})), json.dumps(post.get("photos", [])))
+        statement = "INSERT INTO posts (title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film, photos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         if self.postgres:
             return self.query(statement + " RETURNING id", values, True)[0][0]
         cursor = self.connection.cursor()
@@ -153,10 +153,10 @@ class Database:
         return post_id
 
     def serialize(self, row):
-        return {"id": row[0], "title": row[1], "movieTitle": row[2], "date": row[3], "rating": row[4], "context": row[5], "venue": json.loads(row[6] or "{}"), "tags": json.loads(row[7]), "body": row[8], "conclusion": row[9], "film": json.loads(row[10])}
+        return {"id": row[0], "title": row[1], "movieTitle": row[2], "date": row[3], "rating": row[4], "context": row[5], "venue": json.loads(row[6] or "{}"), "tags": json.loads(row[7]), "body": row[8], "conclusion": row[9], "film": json.loads(row[10]), "photos": json.loads(row[11] or "[]")}
 
     def all_posts(self, limit=None, offset=0):
-        statement = "SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film FROM posts ORDER BY watched_date DESC"
+        statement = "SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film, photos FROM posts ORDER BY watched_date DESC"
         params = ()
         if limit is not None:
             statement += " LIMIT ? OFFSET ?"
@@ -165,12 +165,12 @@ class Database:
         return [self.serialize(row) for row in rows]
 
     def get_post(self, post_id):
-        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film FROM posts WHERE id = ?", (post_id,), True)
+        rows = self.query("SELECT id, title, movie_title, watched_date, rating, context, venue, tags, body, conclusion, film, photos FROM posts WHERE id = ?", (post_id,), True)
         return self.serialize(rows[0]) if rows else None
 
     def update_post(self, post_id, post):
-        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})), post_id)
-        self.query("UPDATE posts SET title = ?, movie_title = ?, watched_date = ?, rating = ?, context = ?, venue = ?, tags = ?, body = ?, conclusion = ?, film = ? WHERE id = ?", values)
+        values = (post["title"], post["movieTitle"], post["date"], post["rating"], post.get("context", ""), json.dumps(post.get("venue", {})), json.dumps(post.get("tags", [])), post["body"], post.get("conclusion", ""), json.dumps(post.get("film", {})), json.dumps(post.get("photos", [])), post_id)
+        self.query("UPDATE posts SET title = ?, movie_title = ?, watched_date = ?, rating = ?, context = ?, venue = ?, tags = ?, body = ?, conclusion = ?, film = ?, photos = ? WHERE id = ?", values)
 
     def delete_post(self, post_id):
         self.query("DELETE FROM posts WHERE id = ?", (post_id,))
@@ -256,7 +256,9 @@ class CinematekHandler(SimpleHTTPRequestHandler):
             return self.send_json({"id": item_id})
         return self.send_json({"error": "Not found."}, 404)
 
-    def authorized(self): return self.headers.get("X-Author-Password") == os.environ.get("AUTHOR_PASSWORD", "cinematek")
+    def authorized(self):
+        password = os.environ.get("AUTHOR_PASSWORD", "")
+        return bool(password) and self.headers.get("X-Author-Password") == password
     def read_json(self): return json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode("utf-8"))
 
     def search_tmdb(self, query):

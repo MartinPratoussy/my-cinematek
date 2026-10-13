@@ -3297,6 +3297,7 @@ body.modal-open {
 }
 
 .critic-text .post-body {
+    display: flow-root;
     color: #f0e8dc;
     font-family: Georgia, "Times New Roman", serif;
     font-size: 1.18rem;
@@ -3311,6 +3312,29 @@ body.modal-open {
 .critic-text .post-body p:last-child,
 .critic-conclusion .post-body p:last-child {
     margin-bottom: 0;
+}
+
+.critic-photo {
+    float: right;
+    width: min(42%, 280px);
+    margin: .35rem 0 1rem 1.25rem;
+    break-inside: avoid;
+}
+
+.critic-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: auto;
+    object-fit: contain;
+    border: 1px solid rgba(211, 180, 138, .2);
+}
+
+.critic-photo figcaption {
+    margin-top: .45rem;
+    color: #c9b59b;
+    font-size: .76rem;
+    line-height: 1.5;
 }
 
 .critic-conclusion .post-body {
@@ -3488,6 +3512,13 @@ body.modal-open {
     .critic-conclusion .post-body {
         font-size: .96rem;
         line-height: 1.75;
+    }
+
+    .critic-text .post-body .critic-photo {
+        float: none;
+        clear: both;
+        width: min(100%, 420px);
+        margin: 1rem 0;
     }
 
     .critic-conclusion .post-body {
@@ -3724,6 +3755,68 @@ body.modal-open {
     border-radius: 4px;
 }
 
+.review-photo-editor {
+    display: grid;
+    gap: .8rem;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(211, 180, 138, .17);
+    border-bottom: 1px solid rgba(211, 180, 138, .17);
+}
+
+.review-photo-editor h3 {
+    margin: 0;
+    color: #f0e5d6;
+    font-family: "Bodoni 72", Didot, Georgia, serif;
+    font-size: 1.2rem;
+    font-weight: 400;
+}
+
+.review-photo-editor .field-hint {
+    margin: .25rem 0 0;
+}
+
+.review-photo-drafts {
+    display: grid;
+    gap: .65rem;
+}
+
+.review-photo-draft {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr) auto;
+    gap: .75rem;
+    align-items: center;
+    min-width: 0;
+    padding: .6rem;
+    background: rgba(222, 198, 163, .035);
+    border: 1px solid rgba(222, 198, 163, .12);
+}
+
+.review-photo-draft img {
+    width: 76px;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+.review-photo-draft label {
+    min-width: 0;
+}
+
+.review-photo-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, .55fr);
+    gap: .7rem;
+    align-items: end;
+    min-width: 0;
+}
+
+.review-photo-fields label {
+    min-width: 0;
+}
+
+.review-photo-draft .danger-btn {
+    padding: .5rem .65rem;
+}
+
 .admin-main input,
 .admin-main textarea,
 .admin-main select {
@@ -3885,6 +3978,27 @@ body.modal-open {
 
     .admin-main .admin-form {
         padding: 1rem;
+    }
+
+    .review-photo-draft {
+        grid-template-columns: 56px minmax(0, 1fr);
+    }
+
+    .review-photo-draft img {
+        width: 56px;
+    }
+
+    .review-photo-fields,
+    .review-photo-draft .danger-btn {
+        grid-column: 2;
+    }
+
+    .review-photo-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .review-photo-draft .danger-btn {
+        justify-self: start;
     }
 
     .admin-post {

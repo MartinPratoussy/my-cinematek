@@ -4,7 +4,7 @@ A personal film journal for publishing reviews and keeping a lightweight log of 
 
 ## Features
 
-- Publish and edit reviews with a rating, viewing context, conclusion, and film details.
+- Publish and edit reviews with a rating, viewing context, conclusion, film details, and captioned photos.
 - Browse the review archive by month, with a featured latest review.
 - Log films without writing a full review, including a short note, rating, venue, and rewatch status.
 - Search the film catalog and view film information through TMDB.
@@ -51,3 +51,46 @@ Get a TMDB API key from https://www.themoviedb.org/settings/api.
 ## Render deployment
 
 The repository includes a Render blueprint in `render.yaml`. Add a PostgreSQL database and configure `DATABASE_URL`, `TMDB_API_KEY`, and `AUTHOR_PASSWORD` as service environment variables. The app refuses to start on Render without `DATABASE_URL`.
+
+## Nix deployment
+
+The flake provides a runnable package and a NixOS module. The module runs as a dynamic unprivileged user. Configure `DATABASE_URL` to use an existing PostgreSQL database such as Neon; SQLite in `/var/lib/my-cinematek` is only the fallback when `DATABASE_URL` is unset.
+
+Add the repository as a flake input and enable the module in your NixOS configuration:
+
+```nix
+{
+	inputs = {
+		nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+		my-cinematek.url = "github:YOUR-USER/my-cinematek";
+	};
+
+	outputs = { self, nixpkgs, my-cinematek, ... }: {
+		nixosConfigurations.YOUR-HOST = nixpkgs.lib.nixosSystem {
+			system = "x86_64-linux";
+			modules = [
+				my-cinematek.nixosModules.default
+				({ ... }: {
+					services.my-cinematek = {
+						enable = true;
+						port = 8000;
+						environmentFile = "/run/secrets/my-cinematek.env";
+					};
+				})
+			];
+		};
+	};
+}
+```
+
+Create the environment file on the server, outside the Nix store, with restrictive permissions. It must define `AUTHOR_PASSWORD` and your Neon `DATABASE_URL`; `TMDB_API_KEY` is optional for film search and details. Use the connection string from Neon and ensure it includes `sslmode=require`. For example:
+
+```sh
+AUTHOR_PASSWORD=choose-a-private-password
+TMDB_API_KEY=your-key-here
+DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
+```
+
+The app connects to Neon and initializes or updates its required tables at startup. Deploy with `sudo nixos-rebuild switch --flake .#YOUR-HOST`. Put a reverse proxy with HTTPS in front of the service for public access.
+
+For a one-off run without the NixOS module, use `nix run github:YOUR-USER/my-cinematek`. It uses Neon when `DATABASE_URL` is set; otherwise, it stores SQLite under `$XDG_DATA_HOME/my-cinematek` or `~/.local/share/my-cinematek`, overridable with `SQLITE_PATH`.
