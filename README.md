@@ -48,6 +48,78 @@ Open the public site at http://localhost:8000. The `/admin.html` page is passwor
 
 Get a TMDB API key from https://www.themoviedb.org/settings/api.
 
+## Public API (GET routes)
+
+The app exposes a small public JSON API for read-only access. These endpoints are designed for GET requests and return JSON payloads that match the data used by the site.
+
+### Reviews
+
+- `GET /api/posts?limit=8&offset=0` — list recent reviews.
+- `GET /api/posts/{id}` — fetch a single review by ID.
+
+Example response from `GET /api/posts/42`:
+
+```json
+{
+  "id": 42,
+  "title": "The Green Knight",
+  "movieTitle": "The Green Knight",
+  "date": "2026-10-14",
+  "rating": 4.5,
+  "context": "Late-night screening with friends",
+  "venue": {
+    "name": "Canal 13",
+    "city": "Paris"
+  },
+  "tags": ["fantasy", "arthurian"],
+  "body": "A strange and haunting film...",
+  "conclusion": "A beautiful, unsettling watch.",
+  "film": {
+    "id": 12345,
+    "title": "The Green Knight",
+    "poster_path": "/xyz.jpg"
+  },
+  "photos": [
+    "https://example.com/photos/green-knight-1.jpg"
+  ]
+}
+```
+
+### Watched films
+
+- `GET /api/watched?limit=8&offset=0` — list recent watched entries.
+
+Example response:
+
+```json
+[
+  {
+    "id": 7,
+    "date": "2026-10-15",
+    "venue": {
+      "name": "Cinéma du Parc"
+    },
+    "rating": 4,
+    "note": "Great pacing and soundtrack.",
+    "rewatch": false,
+    "film": {
+      "id": 54321,
+      "title": "Arrival"
+    },
+    "sourceUrl": ""
+  }
+]
+```
+
+### Film metadata and search
+
+- `GET /api/search?query=arrival` — search for a film via TMDB.
+- `GET /api/movie?id=264114` — fetch a film's details by TMDB ID.
+- `GET /api/places?query=paris` — search nearby places or venue data.
+- `GET /api/poster?url=https://image.tmdb.org/t/p/w500/....jpg` — proxy a poster image from TMDB.
+
+These endpoints are useful when you want to build a public-facing frontend, sync external tools, or embed a simple data feed without exposing admin actions.
+
 ## Render deployment
 
 The repository includes a Render blueprint in `render.yaml`. Add a PostgreSQL database and configure `DATABASE_URL`, `TMDB_API_KEY`, and `AUTHOR_PASSWORD` as service environment variables. The app refuses to start on Render without `DATABASE_URL`.
