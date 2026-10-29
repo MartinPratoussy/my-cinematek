@@ -391,7 +391,7 @@ function inlineReviewMarkup(value, spoilerState) {
   for (const match of text.matchAll(spoilerPattern)) {
     const segment = text.slice(cursor, match.index);
     if (spoilerState.depth > 0) {
-      markup += `<span class="spoiler"><button class="spoiler-toggle" type="button" aria-expanded="false">Afficher le spoiler</button><span class="spoiler-text" hidden>${escapeHtml(segment).replace(/\n/g, "<br>")}</span></span>`;
+      markup += `<span class="spoiler"><span class="spoiler-text" aria-hidden="true">${escapeHtml(segment).replace(/\n/g, "<br>")}</span><button class="spoiler-toggle" type="button" aria-expanded="false">Spoiler · afficher</button></span>`;
     } else {
       markup += escapeHtml(segment).replace(/\n/g, "<br>");
     }
@@ -402,7 +402,7 @@ function inlineReviewMarkup(value, spoilerState) {
   }
   const remainder = text.slice(cursor);
   if (spoilerState.depth > 0) {
-    markup += `<span class="spoiler"><button class="spoiler-toggle" type="button" aria-expanded="false">Afficher le spoiler</button><span class="spoiler-text" hidden>${escapeHtml(remainder).replace(/\n/g, "<br>")}</span></span>`;
+    markup += `<span class="spoiler"><span class="spoiler-text" aria-hidden="true">${escapeHtml(remainder).replace(/\n/g, "<br>")}</span><button class="spoiler-toggle" type="button" aria-expanded="false">Spoiler · afficher</button></span>`;
   } else {
     markup += escapeHtml(remainder).replace(/\n/g, "<br>");
   }
@@ -456,16 +456,18 @@ function bindCriticModal(post) {
   spoilerToggles.forEach((toggle) => toggle.addEventListener("click", () => {
     const isOpen = toggle.getAttribute("aria-expanded") === "true";
     toggle.setAttribute("aria-expanded", String(!isOpen));
-    toggle.textContent = isOpen ? "Afficher le spoiler" : "Masquer le spoiler";
-    toggle.nextElementSibling.hidden = isOpen;
+    toggle.textContent = isOpen ? "Spoiler · afficher" : "Masquer le spoiler";
+    toggle.previousElementSibling.setAttribute("aria-hidden", String(isOpen));
+    toggle.closest(".spoiler").classList.toggle("is-revealed", !isOpen);
     updateSpoilerControls();
   }));
   spoilerAllToggle?.addEventListener("click", () => {
     const shouldOpen = spoilerToggles.some((toggle) => toggle.getAttribute("aria-expanded") !== "true");
     spoilerToggles.forEach((toggle) => {
       toggle.setAttribute("aria-expanded", String(shouldOpen));
-      toggle.textContent = shouldOpen ? "Masquer le spoiler" : "Afficher le spoiler";
-      toggle.nextElementSibling.hidden = !shouldOpen;
+      toggle.textContent = shouldOpen ? "Masquer le spoiler" : "Spoiler · afficher";
+      toggle.previousElementSibling.setAttribute("aria-hidden", String(!shouldOpen));
+      toggle.closest(".spoiler").classList.toggle("is-revealed", shouldOpen);
     });
     updateSpoilerControls();
   });
