@@ -24,6 +24,8 @@ let currentFeaturedPost = null;
 let currentDiaryPosts = [];
 let activeModalPost = null;
 const CRITICS_PER_PAGE = 6;
+const criticPageCache = new Map();
+const MAX_CACHED_CRITIC_PAGES = 3;
 
 function escapeHtml(value = "") {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
@@ -78,11 +80,25 @@ function refreshTitleLanguage() {
 }
 function sortPosts(posts) { return [...posts].sort((a, b) => new Date(b.date) - new Date(a.date)); }
 async function loadPosts(offset = 0, limit = CRITICS_PER_PAGE) {
-  const response = await fetch(`/api/posts?limit=${limit}&offset=${offset}&fresh=${Date.now()}`, { cache: "no-store" });
-  if (!response.ok) throw new Error("Les critiques n’ont pas pu être chargées.");
-  const text = await response.text();
-  if (!text.trim()) throw new Error("L’archive des critiques a renvoyé une réponse vide.");
-  return JSON.parse(text);
+  const cacheKey = `${offset}:${limit}`;
+  if (criticPageCache.has(cacheKey)) return criticPageCache.get(cacheKey);
+  const request = (async () => {
+    const response = await fetch(`/api/posts?limit=${limit}&offset=${offset}&fresh=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error("Les critiques n’ont pas pu être chargées.");
+    const text = await response.text();
+    if (!text.trim()) throw new Error("L’archive des critiques a renvoyé une réponse vide.");
+    return JSON.parse(text);
+  })();
+  criticPageCache.set(cacheKey, request);
+  if (criticPageCache.size > MAX_CACHED_CRITIC_PAGES) {
+    criticPageCache.delete(criticPageCache.keys().next().value);
+  }
+  try {
+    return await request;
+  } catch (error) {
+    if (criticPageCache.get(cacheKey) === request) criticPageCache.delete(cacheKey);
+    throw error;
+  }
 }
 async function loadPost(postId) {
   const response = await fetch(`/api/posts/${postId}`, { cache: "no-store" });
@@ -92,18 +108,7 @@ async function loadPost(postId) {
 async function loadWatched(offset = 0, limit = 8) {
   const response = await fetch(`/api/watched?limit=${limit}&offset=${offset}&fresh=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Les visionnages récents n’ont pas pu être chargés.");
-  const items = await response.json();
-  return Promise.all(items.map(async (item) => {
-    if (!item.film?.id) return item;
-    try {
-      const detailsResponse = await fetch(`/api/movie?id=${item.film.id}`);
-      if (!detailsResponse.ok) return item;
-      const details = await detailsResponse.json();
-      return { ...item, film: { ...item.film, ...details } };
-    } catch {
-      return item;
-    }
-  }));
+  return response.json();
 }
 function technicalFacts(film) {
   return `<div class="technical-grid"><span>Réalisation<strong>${escapeHtml(film.director || "Non renseignée")}</strong></span><span>Distribution<strong>${escapeHtml((film.cast || []).join(", ") || "Non renseignée")}</strong></span><span>Durée<strong>${film.runtime ? `${film.runtime} min` : "Non renseignée"}</strong></span><span>Budget<strong>${money(film.budget)}</strong></span><span>Genres<strong>${escapeHtml((film.genres || []).join(", ") || "Non renseignés")}</strong></span><span>Pays<strong>${escapeHtml((film.countries || []).join(", ") || "Non renseigné")}</strong></span></div>`;
@@ -482,16 +487,6 @@ function openModal(post, focus = true) {
   document.body.classList.add("modal-open");
   if (focus) modal.querySelector(".modal-close").focus();
   bindCriticModal(post);
-  if (post.film?.id && !post.film.director) {
-    loadFilmDetails(post.film).then((film) => {
-      if (film !== post.film && modal.dataset.postId === String(post.id) && !modal.hidden) {
-        const enrichedPost = { ...post, film };
-        activeModalPost = enrichedPost;
-        modalContent.innerHTML = criticMarkup(enrichedPost);
-        bindCriticModal(enrichedPost);
-      }
-    });
-  }
 }
 function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
 function truncateText(value = "", maxLength = 180) {
@@ -608,12 +603,14 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape" && 
 async function loadCriticPage(page) {
   if (criticLoading || page < 1) return;
   criticLoading = true;
+  postsList.setAttribute("aria-busy", "true");
+  previousPosts.disabled = true;
+  nextPosts.disabled = true;
   const firstPage = page === 1;
   const offset = firstPage ? 0 : 1 + ((page - 1) * CRITICS_PER_PAGE);
   const responseLimit = firstPage ? CRITICS_PER_PAGE + 2 : CRITICS_PER_PAGE + 1;
   try {
-    const rawPosts = await loadPosts(offset, responseLimit);
-    const posts = await Promise.all(rawPosts.map(async (post) => post.film?.id ? { ...post, film: await loadFilmDetails(post.film) } : post));
+    const posts = await loadPosts(offset, responseLimit);
     if (firstPage) {
       const featuredPost = posts[0];
       currentFeaturedPost = featuredPost || null;
@@ -631,6 +628,9 @@ async function loadCriticPage(page) {
     return posts;
   } finally {
     criticLoading = false;
+    postsList.removeAttribute("aria-busy");
+    previousPosts.disabled = criticPage === 1;
+    nextPosts.disabled = !criticHasNextPage;
   }
 }
 
