@@ -23,6 +23,7 @@ let titleLanguage = localStorage.getItem("my-cinematek-title-language") || "fr";
 let currentFeaturedPost = null;
 let currentDiaryPosts = [];
 let activeModalPost = null;
+let filmModalRequestId = 0;
 const CRITICS_PER_PAGE = 6;
 const criticPageCache = new Map();
 const MAX_CACHED_CRITIC_PAGES = 3;
@@ -119,13 +120,21 @@ function filmDetailsMarkup(film) {
   return `<div class="film-details"><div class="film-details-heading">${poster ? `<img class="film-details-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(film))}" />` : ""}<div><p class="eyebrow">détails du film</p><h2 id="film-modal-title">${escapeHtml(movieTitleFor(film))}</h2>${year ? `<p class="critic-film-title">${escapeHtml(year)}</p>` : ""}${film.tagline ? `<p class="film-tagline">${escapeHtml(film.tagline)}</p>` : ""}</div></div>${technicalFacts(film)}${film.overview ? `<section class="film-overview-block"><p class="eyebrow">synopsis</p><p>${escapeHtml(film.overview)}</p></section>` : ""}${film.homepage ? `<a class="venue-map-button film-homepage" href="${escapeHtml(film.homepage)}" target="_blank" rel="noreferrer">Voir la fiche officielle</a>` : ""}</div>`;
 }
 async function openFilmModal(film) {
-  const details = await loadFilmDetails(film);
-  filmModalContent.innerHTML = filmDetailsMarkup(details || {});
+  const requestId = ++filmModalRequestId;
+  filmModalContent.innerHTML = filmDetailsMarkup(film || {});
   filmModal.hidden = false;
   document.body.classList.add("modal-open");
   filmModal.querySelector(".modal-close").focus();
+  const details = await loadFilmDetails(film);
+  if (!filmModal.hidden && requestId === filmModalRequestId) {
+    filmModalContent.innerHTML = filmDetailsMarkup(details || {});
+  }
 }
-function closeFilmModal() { filmModal.hidden = true; if (modal.hidden) document.body.classList.remove("modal-open"); }
+function closeFilmModal() {
+  filmModalRequestId += 1;
+  filmModal.hidden = true;
+  if (modal.hidden) document.body.classList.remove("modal-open");
+}
 
 async function loadFilmDetails(film) {
   if (!film?.id) return film;
