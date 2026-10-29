@@ -3296,6 +3296,42 @@ body.modal-open {
     border-top: 1px solid rgba(211, 180, 138, .2);
 }
 
+.spoiler-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin: 1rem 0 -.5rem;
+}
+
+.spoiler-toggle,
+.spoiler-all-toggle {
+    padding: 0;
+    color: #e5bc70;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: .82em;
+    text-decoration: underline;
+    text-underline-offset: .2em;
+    cursor: pointer;
+}
+
+.spoiler-toggle:hover,
+.spoiler-all-toggle:hover,
+.spoiler-toggle:focus-visible,
+.spoiler-all-toggle:focus-visible {
+    color: #fff4e6;
+}
+
+.spoiler-toggle:focus-visible,
+.spoiler-all-toggle:focus-visible {
+    outline: 2px solid #d58d55;
+    outline-offset: 3px;
+}
+
+.spoiler-text {
+    color: inherit;
+}
+
 .critic-text .post-body {
     display: flow-root;
     color: #f0e8dc;

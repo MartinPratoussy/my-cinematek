@@ -372,14 +372,63 @@ async function shareCritic(post, button, status) {
 
 function readingBodyMarkup(value, photos = []) {
   const paragraphs = String(value || "").replace(/\r\n?/g, "\n").split(/\n{2,}/).filter(Boolean);
+  const spoilerState = { depth: 0 };
   return paragraphs.map((paragraph, paragraphIndex) => {
     const placedPhotos = photos.filter((photo) => {
       const position = Number(photo.afterParagraph) || paragraphs.length;
       return Math.min(Math.max(position, 1), paragraphs.length) === paragraphIndex + 1;
     });
     const figures = placedPhotos.map((photo) => `<figure class="critic-photo"><img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.caption || "Photo de la séance")}" loading="lazy" />${photo.caption ? `<figcaption>${escapeHtml(photo.caption)}</figcaption>` : ""}</figure>`).join("");
-    return `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>${figures}`;
+    return `<p>${inlineReviewMarkup(paragraph, spoilerState)}</p>${figures}`;
   }).join("");
+}
+
+function inlineReviewMarkup(value, spoilerState) {
+  const text = String(value || "");
+  const spoilerPattern = /\[spoiler\]|\[\/spoiler\]/gi;
+  let markup = "";
+  let cursor = 0;
+  for (const match of text.matchAll(spoilerPattern)) {
+    const segment = text.slice(cursor, match.index);
+    if (spoilerState.depth > 0) {
+      markup += `<span class="spoiler"><button class="spoiler-toggle" type="button" aria-expanded="false">Afficher le spoiler</button><span class="spoiler-text" hidden>${escapeHtml(segment).replace(/\n/g, "<br>")}</span></span>`;
+    } else {
+      markup += escapeHtml(segment).replace(/\n/g, "<br>");
+    }
+    if (match[0].toLowerCase() === "[spoiler]") spoilerState.depth += 1;
+    else if (spoilerState.depth > 0) spoilerState.depth -= 1;
+    else markup += escapeHtml(match[0]);
+    cursor = match.index + match[0].length;
+  }
+  const remainder = text.slice(cursor);
+  if (spoilerState.depth > 0) {
+    markup += `<span class="spoiler"><button class="spoiler-toggle" type="button" aria-expanded="false">Afficher le spoiler</button><span class="spoiler-text" hidden>${escapeHtml(remainder).replace(/\n/g, "<br>")}</span></span>`;
+  } else {
+    markup += escapeHtml(remainder).replace(/\n/g, "<br>");
+  }
+  return markup;
+}
+
+function spoilerPreviewText(value) {
+  const text = String(value || "");
+  const spoilerPattern = /\[spoiler\]|\[\/spoiler\]/gi;
+  let preview = "";
+  let cursor = 0;
+  let depth = 0;
+  for (const match of text.matchAll(spoilerPattern)) {
+    if (depth === 0) preview += text.slice(cursor, match.index);
+    if (match[0].toLowerCase() === "[spoiler]") {
+      if (depth === 0) preview += "Spoiler masqué";
+      depth += 1;
+    } else if (depth > 0) {
+      depth -= 1;
+    } else {
+      preview += match[0];
+    }
+    cursor = match.index + match[0].length;
+  }
+  if (depth === 0) preview += text.slice(cursor);
+  return preview;
 }
 
 function criticMarkup(post) {
@@ -388,11 +437,38 @@ function criticMarkup(post) {
   const ratingValue = Number(post.rating);
   const ratingLabel = Number.isFinite(ratingValue) ? ratingValue.toFixed(1) : "--";
   const photos = (post.photos || []).filter((photo) => photo.src);
-  return `<header class="critic-reading-heading"><div class="modal-film-heading">${poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div class="critic-heading-copy"><p class="eyebrow">la critique</p><h2 id="modal-title">${escapeHtml(post.title || movieTitleFor(post))}</h2><p class="critic-film-title">${escapeHtml(movieTitleFor(post))}${film.year ? ` <span aria-hidden="true">·</span> ${escapeHtml(film.year)}` : ""}</p></div></div></header>${viewingContextMarkup(post)}<section class="critic-text"><div class="post-body">${readingBodyMarkup(post.body, photos)}</div></section><section class="critic-conclusion"><div class="critic-conclusion-copy"><p class="eyebrow">conclusion</p><div class="post-body">${readingBodyMarkup(post.conclusion)}</div></div><strong class="rating" aria-label="Note ${ratingLabel} sur 10"><span>${ratingLabel}</span><small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
+  const hasSpoilers = /\[spoiler\]/i.test(`${post.body || ""}\n${post.conclusion || ""}`);
+  const spoilerControls = hasSpoilers ? `<div class="spoiler-controls"><button class="spoiler-all-toggle" type="button" aria-expanded="false">Afficher tous les spoilers</button></div>` : "";
+  return `<header class="critic-reading-heading"><div class="modal-film-heading">${poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div class="critic-heading-copy"><p class="eyebrow">la critique</p><h2 id="modal-title">${escapeHtml(post.title || movieTitleFor(post))}</h2><p class="critic-film-title">${escapeHtml(movieTitleFor(post))}${film.year ? ` <span aria-hidden="true">·</span> ${escapeHtml(film.year)}` : ""}</p></div></div></header>${viewingContextMarkup(post)}${spoilerControls}<section class="critic-text"><div class="post-body">${readingBodyMarkup(post.body, photos)}</div></section><section class="critic-conclusion"><div class="critic-conclusion-copy"><p class="eyebrow">conclusion</p><div class="post-body">${readingBodyMarkup(post.conclusion)}</div></div><strong class="rating" aria-label="Note ${ratingLabel} sur 10"><span>${ratingLabel}</span><small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
 }
 function bindCriticModal(post) {
   modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle }));
   modalContent.querySelector(".rating")?.style.setProperty("--rating-rgb", ratingTone(post.rating));
+  const spoilerToggles = [...modalContent.querySelectorAll(".spoiler-toggle")];
+  const spoilerAllToggle = modalContent.querySelector(".spoiler-all-toggle");
+  const updateSpoilerControls = () => {
+    const allOpen = spoilerToggles.length > 0 && spoilerToggles.every((toggle) => toggle.getAttribute("aria-expanded") === "true");
+    if (spoilerAllToggle) {
+      spoilerAllToggle.textContent = allOpen ? "Masquer tous les spoilers" : "Afficher tous les spoilers";
+      spoilerAllToggle.setAttribute("aria-expanded", String(allOpen));
+    }
+  };
+  spoilerToggles.forEach((toggle) => toggle.addEventListener("click", () => {
+    const isOpen = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!isOpen));
+    toggle.textContent = isOpen ? "Afficher le spoiler" : "Masquer le spoiler";
+    toggle.nextElementSibling.hidden = isOpen;
+    updateSpoilerControls();
+  }));
+  spoilerAllToggle?.addEventListener("click", () => {
+    const shouldOpen = spoilerToggles.some((toggle) => toggle.getAttribute("aria-expanded") !== "true");
+    spoilerToggles.forEach((toggle) => {
+      toggle.setAttribute("aria-expanded", String(shouldOpen));
+      toggle.textContent = shouldOpen ? "Masquer le spoiler" : "Afficher le spoiler";
+      toggle.nextElementSibling.hidden = !shouldOpen;
+    });
+    updateSpoilerControls();
+  });
   const shareButton = modalContent.querySelector(".share-button");
   shareButton?.addEventListener("click", () => shareCritic(post, shareButton, modalContent.querySelector(".share-status")));
 }
@@ -439,7 +515,7 @@ function renderFeaturedReview(post) {
   const film = post.film || {};
   const ratingValue = Number(post.rating);
   const ratingLabel = Number.isFinite(ratingValue) ? ratingValue.toFixed(1) : "--";
-  const teaser = truncateText(post.body || "", 170);
+  const teaser = truncateText(spoilerPreviewText(post.body), 170);
   featuredReview.innerHTML = `
     <div class="featured-review-copy">
       <p class="eyebrow">dernière critique</p>

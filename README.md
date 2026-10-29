@@ -5,6 +5,7 @@ A personal film journal for publishing reviews and keeping a lightweight log of 
 ## Features
 
 - Publish and edit reviews with a rating, viewing context, conclusion, film details, and captioned photos.
+- Mark spoiler passages with `[spoiler]...[/spoiler]` in a review or conclusion; readers can reveal passages individually or all at once.
 - Browse the review archive by month, with a featured latest review.
 - Log films without writing a full review, including a short note, rating, venue, and rewatch status.
 - Search the film catalog and view film information through TMDB.
