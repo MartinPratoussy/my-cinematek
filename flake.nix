@@ -72,10 +72,12 @@
             systemd.services.my-cinematek = {
               description = "my-cinematek film journal";
               wantedBy = [ "multi-user.target" ];
-              after = [ "network.target" ];
+              wants = [ "network-online.target" ];
+              after = [ "network-online.target" ];
               serviceConfig = {
                 ExecStart = "${cfg.package}/bin/my-cinematek";
                 Restart = "on-failure";
+                RestartSec = "10s";
                 DynamicUser = true;
                 StateDirectory = "my-cinematek";
                 StateDirectoryMode = "0700";
