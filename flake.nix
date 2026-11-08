@@ -50,6 +50,12 @@
               default = packageFor pkgs;
               description = "The my-cinematek package to run.";
             };
+            host = lib.mkOption {
+              type = lib.types.str;
+              default = "127.0.0.1";
+              example = "0.0.0.0";
+              description = "IPv4 address listened to by my-cinematek. The default only accepts local connections (e.g. from a reverse proxy); use 0.0.0.0 to listen on all interfaces.";
+            };
             port = lib.mkOption {
               type = lib.types.port;
               default = 8000;
@@ -86,6 +92,7 @@
                 PrivateTmp = true;
                 NoNewPrivileges = true;
                 Environment = [
+                  "HOST=${cfg.host}"
                   "PORT=${toString cfg.port}"
                   "SQLITE_PATH=/var/lib/my-cinematek/my-cinematek.db"
                 ];

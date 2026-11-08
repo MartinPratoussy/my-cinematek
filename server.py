@@ -426,6 +426,8 @@ class CinematekHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 if __name__ == "__main__":
+    # Empty HOST listens on all interfaces (needed on Render)
+    host = os.environ.get("HOST", "")
     port = int(os.environ.get("PORT", "8000"))
-    print(f"Starting my-cinematek on port {port}...", flush=True)
-    ThreadingHTTPServer(("", port), CinematekHandler).serve_forever()
+    print(f"Starting my-cinematek on {host or '*'}:{port}...", flush=True)
+    ThreadingHTTPServer((host, port), CinematekHandler).serve_forever()
