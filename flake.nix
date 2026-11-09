@@ -3,12 +3,17 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
-      systems = [ "x86_64-linux" "aarch64-linux" ];
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
 
-      packageFor = pkgs:
+      packageFor =
+        pkgs:
         let
           python = pkgs.python3.withPackages (packages: [ packages.psycopg ]);
           appFiles = pkgs.stdenvNoCC.mkDerivation {
@@ -38,7 +43,13 @@
         default = packageFor (import nixpkgs { inherit system; });
       });
 
-      nixosModules.default = { config, lib, pkgs, ... }:
+      nixosModules.default =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
         let
           cfg = config.services.my-cinematek;
         in
@@ -49,6 +60,12 @@
               type = lib.types.package;
               default = packageFor pkgs;
               description = "The my-cinematek package to run.";
+            };
+            host = lib.mkOption {
+              type = lib.types.str;
+              default = "127.0.0.1";
+              example = "0.0.0.0";
+              description = "IPv4 address listened to by my-cinematek. The default only accepts local connections (e.g. from a reverse proxy); use 0.0.0.0 to listen on all interfaces.";
             };
             port = lib.mkOption {
               type = lib.types.port;
@@ -85,11 +102,40 @@
                 ProtectSystem = "strict";
                 PrivateTmp = true;
                 NoNewPrivileges = true;
+                CapabilityBoundingSet = "";
+                PrivateDevices = true;
+                PrivateUsers = true;
+                ProtectClock = true;
+                ProtectControlGroups = true;
+                ProtectHostname = true;
+                ProtectKernelLogs = true;
+                ProtectKernelModules = true;
+                ProtectKernelTunables = true;
+                ProtectProc = "invisible";
+                RestrictAddressFamilies = [
+                  "AF_INET"
+                  "AF_INET6"
+                  "AF_UNIX"
+                  "AF_NETLINK"
+                ];
+                RestrictNamespaces = true;
+                RestrictRealtime = true;
+                LockPersonality = true;
+                MemoryDenyWriteExecute = true;
+                SystemCallArchitectures = "native";
+                SystemCallFilter = [
+                  "@system-service"
+                  "~@privileged @resources"
+                ];
+                UMask = "0077";
+
                 Environment = [
+                  "HOST=${cfg.host}"
                   "PORT=${toString cfg.port}"
                   "SQLITE_PATH=/var/lib/my-cinematek/my-cinematek.db"
                 ];
-              } // lib.optionalAttrs (cfg.environmentFile != null) {
+              }
+              // lib.optionalAttrs (cfg.environmentFile != null) {
                 EnvironmentFile = cfg.environmentFile;
               };
             };
