@@ -6,7 +6,9 @@
     color-scheme: dark;
 
     --font-sans: "Libre Franklin", "Helvetica Neue", Arial, sans-serif;
-    --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+    /* Display serif for headlines; Source Serif stays for long-form reading. */
+    --font-display: "Instrument Serif", "Source Serif 4", Georgia, serif;
+    --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
 
     --ink-900: #09080a;
     --ink-800: #0d0b0d;
@@ -118,8 +120,8 @@ h3,
 h4 {
     font-family: var(--font-display);
     font-weight: 400;
-    line-height: 1.08;
-    letter-spacing: -0.02em;
+    line-height: 1.04;
+    letter-spacing: -0.005em;
     text-wrap: balance;
 }
 
@@ -218,8 +220,8 @@ body::after {
     align-items: flex-start;
     gap: 0.15em;
     font-family: var(--font-display);
-    font-size: clamp(1.05rem, 1.4vw, 1.3rem);
-    letter-spacing: -0.03em;
+    font-size: clamp(1.15rem, 1.5vw, 1.45rem);
+    letter-spacing: -0.005em;
     transition: color var(--speed) var(--ease);
 }
 
@@ -332,9 +334,9 @@ body::after {
 }
 
 .masthead-word {
-    font-size: clamp(2.5rem, 7vw, 5.5rem);
-    line-height: 1;
-    letter-spacing: -0.035em;
+    font-size: clamp(2.9rem, 8vw, 6.5rem);
+    line-height: 0.98;
+    letter-spacing: -0.01em;
     margin-block: 0;
 }
 
@@ -455,8 +457,8 @@ body::after {
 }
 
 .featured-review-copy h2 {
-    font-size: clamp(1.7rem, 3.4vw, 3rem);
-    letter-spacing: -0.025em;
+    font-size: clamp(1.9rem, 3.8vw, 3.4rem);
+    letter-spacing: -0.005em;
 }
 
 .featured-review-title {
@@ -498,7 +500,8 @@ body::after {
     display: inline-flex;
     align-items: baseline;
     gap: 0.12em;
-    font-family: var(--font-display);
+    /* Source Serif keeps a real 600 weight and tabular figures. */
+    font-family: var(--font-serif);
     letter-spacing: -0.02em;
     color: rgb(var(--rating-rgb));
 }
@@ -560,7 +563,7 @@ body::after {
 }
 
 .section-intro h2 {
-    font-size: clamp(2.2rem, 6vw, 4.2rem);
+    font-size: clamp(2.4rem, 6.5vw, 4.6rem);
     margin-top: 0.6rem;
 }
 
@@ -657,7 +660,7 @@ body::after {
 }
 
 .diary-date-day {
-    font-family: var(--font-display);
+    font-family: var(--font-serif);
     font-size: 1.6rem;
     letter-spacing: -0.02em;
     text-transform: none;
@@ -695,9 +698,9 @@ body::after {
 
 .diary-copy .film-kicker {
     font-family: var(--font-display);
-    font-size: clamp(1.5rem, 2.6vw, 2.15rem);
-    line-height: 1.12;
-    letter-spacing: -0.025em;
+    font-size: clamp(1.65rem, 2.8vw, 2.35rem);
+    line-height: 1.08;
+    letter-spacing: -0.005em;
     color: var(--text);
 }
 
@@ -945,8 +948,8 @@ body::after {
 
 .footer-brand {
     font-family: var(--font-display);
-    font-size: clamp(1.4rem, 3vw, 2.2rem);
-    letter-spacing: -0.03em;
+    font-size: clamp(1.55rem, 3.2vw, 2.4rem);
+    letter-spacing: -0.005em;
     transition: color var(--speed) var(--ease);
 }
 
@@ -978,7 +981,7 @@ body::after {
 
 .empty-state {
     padding: 3rem 0;
-    font-family: var(--font-display);
+    font-family: var(--font-serif);
     font-size: 1.1rem;
     font-style: italic;
     color: var(--text-muted);
@@ -1133,7 +1136,7 @@ body::after {
 
 .critic-heading-copy h2,
 .film-details-heading h2 {
-    font-size: clamp(1.5rem, 3.4vw, 2.5rem);
+    font-size: clamp(1.7rem, 3.8vw, 2.8rem);
 }
 
 .critic-film-title {
@@ -1184,7 +1187,7 @@ body::after {
 }
 
 .post-body {
-    font-family: var(--font-display);
+    font-family: var(--font-serif);
     font-size: clamp(1.02rem, 0.4vw + 0.95rem, 1.16rem);
     line-height: 1.78;
     color: var(--text-soft);
@@ -1416,7 +1419,7 @@ body::after {
 }
 
 .technical-grid strong {
-    font-family: var(--font-display);
+    font-family: var(--font-serif);
     font-size: 0.95rem;
     font-weight: 400;
     letter-spacing: 0;
@@ -1431,7 +1434,7 @@ body::after {
 }
 
 .film-overview-block p:not(.eyebrow) {
-    font-family: var(--font-display);
+    font-family: var(--font-serif);
     font-size: 1.04rem;
     line-height: 1.75;
     color: var(--text-soft);
