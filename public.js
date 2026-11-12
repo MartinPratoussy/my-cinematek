@@ -27,6 +27,32 @@ let filmModalRequestId = 0;
 const CRITICS_PER_PAGE = 6;
 const criticPageCache = new Map();
 const MAX_CACHED_CRITIC_PAGES = 3;
+const REVEAL_SELECTOR = ".diary-row, .recent-watch-row";
+const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+let revealObserver = null;
+let modalReturnFocus = null;
+let filmModalReturnFocus = null;
+
+/* Stagger elements into view as they are scrolled to. Falls back to showing
+   everything at once when IntersectionObserver or motion is unavailable. */
+function observeReveals(container) {
+  const targets = [...(container || document).querySelectorAll(REVEAL_SELECTOR)].filter((element) => !element.classList.contains("is-visible"));
+  if (!targets.length) return;
+  if (prefersReducedMotion?.matches || typeof IntersectionObserver === "undefined") {
+    targets.forEach((element) => element.classList.add("is-visible"));
+    return;
+  }
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver((entries, observer) => {
+      entries.filter((entry) => entry.isIntersecting).forEach((entry, index) => {
+        entry.target.style.setProperty("--reveal-index", String(index));
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.1 });
+  }
+  targets.forEach((element) => revealObserver.observe(element));
+}
 
 function escapeHtml(value = "") {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
@@ -119,8 +145,9 @@ function filmDetailsMarkup(film) {
   const year = film.year || (film.releaseDate || "").slice(0, 4);
   return `<div class="film-details"><div class="film-details-heading">${poster ? `<img class="film-details-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(film))}" />` : ""}<div><p class="eyebrow">détails du film</p><h2 id="film-modal-title">${escapeHtml(movieTitleFor(film))}</h2>${year ? `<p class="critic-film-title">${escapeHtml(year)}</p>` : ""}${film.tagline ? `<p class="film-tagline">${escapeHtml(film.tagline)}</p>` : ""}</div></div>${technicalFacts(film)}${film.overview ? `<section class="film-overview-block"><p class="eyebrow">synopsis</p><p>${escapeHtml(film.overview)}</p></section>` : ""}${film.homepage ? `<a class="venue-map-button film-homepage" href="${escapeHtml(film.homepage)}" target="_blank" rel="noreferrer">Voir la fiche officielle</a>` : ""}</div>`;
 }
-async function openFilmModal(film) {
+async function openFilmModal(film, trigger = null) {
   const requestId = ++filmModalRequestId;
+  if (trigger) filmModalReturnFocus = trigger;
   filmModalContent.innerHTML = filmDetailsMarkup(film || {});
   filmModal.hidden = false;
   document.body.classList.add("modal-open");
@@ -134,6 +161,10 @@ function closeFilmModal() {
   filmModalRequestId += 1;
   filmModal.hidden = true;
   if (modal.hidden) document.body.classList.remove("modal-open");
+  const target = filmModalReturnFocus;
+  filmModalReturnFocus = null;
+  if (target?.isConnected) target.focus();
+  else if (!modal.hidden) modal.querySelector(".modal-close")?.focus();
 }
 
 async function loadFilmDetails(film) {
@@ -456,7 +487,7 @@ function criticMarkup(post) {
   return `<header class="critic-reading-heading"><div class="modal-film-heading">${poster ? `<button class="poster-button" type="button" aria-label="Voir les détails du film"><img class="critic-poster" src="${escapeHtml(poster)}" alt="Affiche de ${escapeHtml(movieTitleFor(post))}" /></button>` : ""}<div class="critic-heading-copy"><p class="eyebrow">la critique</p><h2 id="modal-title">${escapeHtml(post.title || movieTitleFor(post))}</h2><p class="critic-film-title">${escapeHtml(movieTitleFor(post))}${film.year ? ` <span aria-hidden="true">·</span> ${escapeHtml(film.year)}` : ""}</p></div></div></header>${viewingContextMarkup(post)}${spoilerControls}<section class="critic-text"><div class="post-body">${readingBodyMarkup(post.body, photos)}</div></section><section class="critic-conclusion"><div class="critic-conclusion-copy"><p class="eyebrow">conclusion</p><div class="post-body">${readingBodyMarkup(post.conclusion)}</div></div><strong class="rating" aria-label="Note ${ratingLabel} sur 10"><span>${ratingLabel}</span><small>/10</small></strong></section><div class="critic-share"><button class="share-button" type="button"><span aria-hidden="true">↗</span>Partager en story</button><span class="share-status" role="status" aria-live="polite"></span></div>`;
 }
 function bindCriticModal(post) {
-  modalContent.querySelector(".poster-button")?.addEventListener("click", () => openFilmModal(post.film || { title: post.movieTitle }));
+  modalContent.querySelector(".poster-button")?.addEventListener("click", (event) => openFilmModal(post.film || { title: post.movieTitle }, event.currentTarget));
   modalContent.querySelector(".rating")?.style.setProperty("--rating-rgb", ratingTone(post.rating));
   const spoilerToggles = [...modalContent.querySelectorAll(".spoiler-toggle")];
   const spoilerAllToggle = modalContent.querySelector(".spoiler-all-toggle");
@@ -488,8 +519,9 @@ function bindCriticModal(post) {
   const shareButton = modalContent.querySelector(".share-button");
   shareButton?.addEventListener("click", () => shareCritic(post, shareButton, modalContent.querySelector(".share-status")));
 }
-function openModal(post, focus = true) {
+function openModal(post, focus = true, trigger = null) {
   activeModalPost = post;
+  if (trigger) modalReturnFocus = trigger;
   modal.dataset.postId = String(post.id);
   modalContent.innerHTML = criticMarkup(post);
   modal.hidden = false;
@@ -497,7 +529,13 @@ function openModal(post, focus = true) {
   if (focus) modal.querySelector(".modal-close").focus();
   bindCriticModal(post);
 }
-function closeModal() { modal.hidden = true; document.body.classList.remove("modal-open"); }
+function closeModal() {
+  modal.hidden = true;
+  if (filmModal.hidden) document.body.classList.remove("modal-open");
+  const target = modalReturnFocus;
+  modalReturnFocus = null;
+  if (target?.isConnected) target.focus();
+}
 function truncateText(value = "", maxLength = 180) {
   const text = String(value).replace(/\s+/g, " ").trim();
   return text.length > maxLength ? `${text.slice(0, maxLength - 1).trim()}…` : text;
@@ -534,11 +572,11 @@ function renderFeaturedReview(post) {
   `;
   featuredReview.setAttribute("role", "button");
   featuredReview.setAttribute("tabindex", "0");
-  featuredReview.onclick = () => openModal(post);
+  featuredReview.onclick = () => openModal(post, true, featuredReview);
   featuredReview.onkeydown = (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      openModal(post);
+      openModal(post, true, featuredReview);
     }
   };
 }
@@ -555,10 +593,11 @@ function renderDiary(posts, append = false) {
     const month = diaryMonth(post.date);
     const monthHeading = month.key && month.key !== previousMonth ? `<h3 class="diary-month">${escapeHtml(month.label)}</h3>` : "";
     if (month.key) previousMonth = month.key;
-    return `${monthHeading}<button class="diary-row" type="button" data-id="${post.id}" data-month="${month.key}"><span class="diary-date">${diaryDateMarkup(post.date)}</span>${posterFor(post) ? `<img class="diary-poster" src="${escapeHtml(posterFor(post))}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(movieTitleFor(post))}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-rating" style="--rating-rgb: ${ratingTone(ratingValue)}" aria-label="Note ${ratingLabel} sur 10"><strong>${ratingLabel}</strong><small>/10</small></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`;
+    return `${monthHeading}<button class="diary-row" type="button" data-id="${post.id}" data-month="${month.key}" style="--rating-rgb: ${ratingTone(ratingValue)}"><span class="diary-date">${diaryDateMarkup(post.date)}</span>${posterFor(post) ? `<img class="diary-poster" src="${escapeHtml(posterFor(post))}" alt="" />` : ""}<span class="diary-copy"><span class="film-kicker">${escapeHtml(movieTitleFor(post))}</span><strong>${escapeHtml(post.title)}</strong><span class="diary-venue">${venueButton(post.venue) || escapeHtml(post.context || "")}</span></span><span class="diary-rating" aria-label="Note ${ratingLabel} sur 10"><strong>${ratingLabel}</strong><small>/10</small></span><span class="diary-arrow" aria-hidden="true">&rarr;</span></button>`;
   }).join("");
   if (append) postsList.insertAdjacentHTML("beforeend", markup); else postsList.innerHTML = markup;
-  postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", () => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post); }));
+  postsList.querySelectorAll(".diary-row").forEach((row) => row.addEventListener("click", (event) => { const post = posts.find((item) => item.id === Number(row.dataset.id)); if (post) openModal(post, true, event.currentTarget); }));
+  observeReveals(postsList);
 }
 function renderWatched(items, append = false) {
   const mergedItems = append ? [...watchedItems, ...items] : items;
@@ -572,13 +611,14 @@ function renderWatched(items, append = false) {
       : "";
     return `<article class="recent-watch-row"><div class="recent-watch-copy"><strong>${escapeHtml(movieTitleFor(item))}${item.rewatch ? ' <em>revu</em>' : ""}</strong><div class="recent-watch-meta"><span class="recent-watch-date">${escapeHtml(formatDate(item.date))}</span><span class="recent-watch-venue">${venueButton(item.venue) || "visionnage"}</span>${rating}</div>${item.note ? `<p class="recent-watch-note"><small>note rapide</small>${escapeHtml(item.note)}</p>` : ""}</div>${posterFor(item) ? `<button class="poster-button recent-watch-poster-button" type="button" data-watched-index="${index}" aria-label="Voir les détails du film"><img class="recent-watch-poster" src="${escapeHtml(posterFor(item))}" alt="" /></button>` : ""}</article>`;
   }).join("") : '<p class="empty-state">Aucun visionnage sans critique.</p>') + sentinel;
-  watchedList.querySelectorAll(".recent-watch-poster-button").forEach((button) => button.addEventListener("click", () => openFilmModal(mergedItems[Number(button.dataset.watchedIndex)].film)));
+  watchedList.querySelectorAll(".recent-watch-poster-button").forEach((button) => button.addEventListener("click", (event) => openFilmModal(mergedItems[Number(button.dataset.watchedIndex)].film, event.currentTarget)));
+  observeReveals(watchedList);
   if (watchedObserver) watchedObserver.disconnect();
   const watchedSentinel = watchedList.querySelector(".watched-sentinel");
   if (watchedSentinel && typeof IntersectionObserver !== "undefined") {
     watchedObserver = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) loadMoreWatched();
-    }, { root: watchedList, threshold: .2 });
+    }, { rootMargin: "0px 0px 20% 0px", threshold: 0 });
     watchedObserver.observe(watchedSentinel);
   }
 }
@@ -608,7 +648,40 @@ titleLanguageButtons.forEach((button) => button.addEventListener("click", () => 
 refreshTitleLanguage();
 document.querySelectorAll("[data-close-modal]").forEach((element) => element.addEventListener("click", closeModal));
 document.querySelectorAll("[data-close-film-modal]").forEach((element) => element.addEventListener("click", closeFilmModal));
-document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modal.hidden) closeModal(); });
+const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+/* The film modal stacks on top of the critic modal, so it wins when both are open. */
+function activeDialog() {
+  if (!filmModal.hidden) return filmModal;
+  if (!modal.hidden) return modal;
+  return null;
+}
+
+document.addEventListener("keydown", (event) => {
+  const dialog = activeDialog();
+  if (!dialog) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    if (dialog === filmModal) closeFilmModal();
+    else closeModal();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = [...dialog.querySelectorAll(FOCUSABLE)].filter((element) => element.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  } else if (!dialog.contains(document.activeElement)) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 async function loadCriticPage(page) {
   if (criticLoading || page < 1) return;
   criticLoading = true;

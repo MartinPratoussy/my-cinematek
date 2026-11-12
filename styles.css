@@ -72,6 +72,10 @@
 
 html {
     scroll-behavior: smooth;
+    /* Keep anchored sections clear of the sticky topbar. */
+    scroll-padding-top: 5.5rem;
+    /* Reserve the scrollbar so opening a modal cannot shift the layout. */
+    scrollbar-gutter: stable;
     -webkit-text-size-adjust: 100%;
 }
 
@@ -179,6 +183,7 @@ body::after {
 .journal > section {
     padding-block: var(--rhythm);
     border-top: 1px solid var(--line-faint);
+    scroll-margin-top: 5.5rem;
 }
 
 .journal > section:first-of-type {
@@ -507,8 +512,20 @@ body::after {
 }
 
 .featured-review-rating {
+    position: relative;
     margin-left: auto;
     font-size: 1.5rem;
+}
+
+/* Faint halo in the rating's own hue. */
+.featured-review-rating::before {
+    content: "";
+    position: absolute;
+    inset: -45% -35%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(var(--rating-rgb) / 0.18), transparent 70%);
+    pointer-events: none;
 }
 
 .featured-review-rating strong,
@@ -596,14 +613,25 @@ body::after {
     flex-direction: column;
 }
 
+/* Sticky month label: stays under the topbar while its month scrolls past. */
 .diary-month {
+    position: sticky;
+    top: 4.35rem;
+    z-index: 20;
     padding: 2.75rem 0 1rem;
+    margin-inline: -0.75rem;
+    padding-inline: 0.75rem;
     font-family: var(--font-sans);
     font-size: 0.68rem;
     font-weight: 500;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--text-faint);
+    color: var(--text-muted);
+    background: linear-gradient(180deg,
+            color-mix(in srgb, #0d0b0d 92%, transparent) 0%,
+            color-mix(in srgb, #0d0b0d 92%, transparent) 72%,
+            transparent 100%);
+    backdrop-filter: blur(6px);
 }
 
 .diary-month:first-child {
@@ -623,6 +651,23 @@ body::after {
     transition: padding-inline var(--speed) var(--ease-out);
 }
 
+/* Rating-tinted rule that marks each entry. */
+.diary-row::after {
+    content: "";
+    position: absolute;
+    left: -0.75rem;
+    top: 1.5rem;
+    bottom: 1.5rem;
+    width: 2px;
+    border-radius: 2px;
+    background: rgb(var(--rating-rgb));
+    opacity: 0;
+    transform: scaleY(0.4);
+    transform-origin: center;
+    transition: opacity var(--speed) var(--ease), transform var(--speed) var(--ease-out);
+    pointer-events: none;
+}
+
 /* Warm wash that sweeps in on hover. */
 .diary-row::before {
     content: "";
@@ -635,12 +680,19 @@ body::after {
     pointer-events: none;
 }
 
-.diary-row:hover::before {
-    opacity: 1;
-}
+@media (hover: hover) {
+    .diary-row:hover::before {
+        opacity: 1;
+    }
 
-.diary-row:hover {
-    padding-inline: 1.25rem 0.25rem;
+    .diary-row:hover::after {
+        opacity: 0.85;
+        transform: scaleY(1);
+    }
+
+    .diary-row:hover {
+        padding-inline: 1.25rem 0.25rem;
+    }
 }
 
 .diary-date {
@@ -1488,11 +1540,6 @@ body::after {
     .opening-foot {
         animation-delay: 0.24s;
     }
-
-    .diary-row,
-    .recent-watch-row {
-        animation: enter 0.7s var(--ease-out) both;
-    }
 }
 
 @keyframes enter {
@@ -1551,4 +1598,165 @@ body::after {
 
 .recent .section-note {
     font-size: 0.78rem;
+}
+
+/* ==========================================================================
+   Touch devices: hover-only affordances must stay visible
+   ========================================================================== */
+
+@media (hover: none) {
+    .featured-review-cover::after {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .diary-arrow {
+        opacity: 1;
+        transform: translateX(0);
+        color: var(--accent);
+    }
+
+    .diary-row::after {
+        opacity: 0.85;
+        transform: scaleY(1);
+    }
+
+    .watch-grid {
+        opacity: 1;
+    }
+
+    .recent-watch-poster {
+        filter: saturate(0.82) brightness(0.9);
+    }
+}
+
+/* ==========================================================================
+   Scroll reveal — .is-visible is added by the IntersectionObserver
+   ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+    .diary-row,
+    .recent-watch-row {
+        opacity: 0;
+        transform: translateY(1.75rem);
+        transition:
+            opacity 0.75s var(--ease-out),
+            transform 0.75s var(--ease-out);
+        transition-delay: calc(var(--reveal-index, 0) * 70ms);
+    }
+
+    .diary-row .diary-poster,
+    .recent-watch-row .recent-watch-poster-button {
+        clip-path: inset(0 0 100% 0);
+        transition: clip-path 0.85s var(--ease-out);
+        transition-delay: calc(var(--reveal-index, 0) * 70ms + 90ms);
+    }
+
+    .diary-row.is-visible,
+    .recent-watch-row.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .diary-row.is-visible .diary-poster,
+    .recent-watch-row.is-visible .recent-watch-poster-button {
+        clip-path: inset(0 0 0 0);
+    }
+
+    /* The row shifts on hover, so the padding transition must survive. */
+    .diary-row.is-visible {
+        transition:
+            opacity 0.75s var(--ease-out),
+            transform 0.75s var(--ease-out),
+            padding-inline var(--speed) var(--ease-out);
+    }
+}
+
+/* ==========================================================================
+   Render containment
+
+   Only applied when motion is reduced: content-visibility skips rendering of
+   off-screen elements, which would prevent the reveal transitions above from
+   ever running.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .diary-row {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 11rem;
+    }
+
+    .recent-watch-row {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 18rem;
+    }
+}
+
+/* ==========================================================================
+   Loading states
+   ========================================================================== */
+
+.post-list[aria-busy="true"] {
+    opacity: 0.45;
+    transition: opacity 0.2s var(--ease);
+}
+
+.post-list[aria-busy="true"] .diary-row {
+    pointer-events: none;
+}
+
+/* Placeholder rows shown before the first fetch resolves. */
+.post-list:empty {
+    display: flex;
+    flex-direction: column;
+}
+
+.post-list:empty::before,
+.post-list:empty::after {
+    content: "";
+    display: block;
+    height: 11rem;
+    border-top: 1px solid var(--line-faint);
+    background:
+        linear-gradient(90deg, transparent 0 7.5rem, var(--surface) 7.5rem 15rem, transparent 15rem),
+        linear-gradient(90deg, transparent 0 18rem, var(--surface-sunken) 18rem 34rem, transparent 34rem);
+    background-repeat: no-repeat;
+    background-size: 100% 6.5rem, 100% 1.5rem;
+    background-position: 0 2.25rem, 0 4rem;
+    animation: skeleton-pulse 1.6s var(--ease) infinite;
+}
+
+.post-list:empty::after {
+    animation-delay: 0.2s;
+}
+
+.watch-grid:empty {
+    display: grid;
+    min-height: 16rem;
+}
+
+.watch-grid:empty::before {
+    content: "";
+    grid-column: 1 / -1;
+    border-radius: var(--radius-xs);
+    background: var(--surface);
+    animation: skeleton-pulse 1.6s var(--ease) infinite;
+}
+
+@keyframes skeleton-pulse {
+    0%, 100% {
+        opacity: 0.35;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .post-list:empty::before,
+    .post-list:empty::after,
+    .watch-grid:empty::before {
+        animation: none;
+    }
 }
