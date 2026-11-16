@@ -49,7 +49,9 @@
 
     --gutter: clamp(1.25rem, 5vw, 5.5rem);
     --max-width: 1320px;
-    --rhythm: clamp(4.5rem, 10vw, 9rem);
+    --rhythm: clamp(3rem, 5.5vw, 5rem);
+    --space-block: clamp(1.25rem, 2.5vw, 2rem);
+    --space-row: 1.5rem;
 
     --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -304,7 +306,7 @@ body::after {
 .opening {
     display: flex;
     flex-direction: column;
-    gap: clamp(1.75rem, 3.5vw, 3rem);
+    gap: clamp(1.25rem, 2.5vw, 2rem);
 }
 
 .opening-kicker,
@@ -383,7 +385,7 @@ body::after {
 .feature {
     display: grid;
     grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    gap: clamp(2rem, 5vw, 4.5rem);
+    gap: clamp(1.5rem, 3.5vw, 3rem);
     align-items: center;
     cursor: pointer;
 }
@@ -553,7 +555,7 @@ body::after {
 @media (max-width: 899px) {
     .feature {
         grid-template-columns: 1fr;
-        gap: 1.75rem;
+        gap: 1.5rem;
     }
 
     .featured-review-cover {
@@ -567,6 +569,24 @@ body::after {
     }
 }
 
+/* A 2:3 poster at 320px runs 480px tall, which pushes the teaser and the
+   rest of the page off a phone screen entirely. */
+@media (max-width: 559px) {
+    .featured-review-cover {
+        max-width: 13rem;
+    }
+
+    .featured-review-meta {
+        gap: 0.75rem 1rem;
+        flex-wrap: wrap;
+        padding-top: 1rem;
+    }
+
+    .featured-review-rating {
+        font-size: 1.3rem;
+    }
+}
+
 /* ==========================================================================
    Section intros
    ========================================================================== */
@@ -576,7 +596,7 @@ body::after {
     align-items: flex-end;
     justify-content: space-between;
     gap: 2rem;
-    padding-bottom: clamp(2rem, 4vw, 3.5rem);
+    padding-bottom: var(--space-block);
 }
 
 .section-intro h2 {
@@ -621,7 +641,7 @@ body::after {
     display: flex;
     align-items: center;
     gap: 0.85rem;
-    margin: 3.5rem calc(var(--gutter) * -1) 0;
+    margin: 2rem calc(var(--gutter) * -1) 0;
     padding: 0.7rem var(--gutter) 0.75rem;
     font-family: var(--font-sans);
     font-size: 0.64rem;
@@ -662,7 +682,7 @@ body::after {
     align-items: center;
     gap: clamp(1.25rem, 3vw, 2.75rem);
     width: 100%;
-    padding: 2.25rem 0.25rem;
+    padding: var(--space-row) 0.25rem;
     text-align: left;
     border-top: 1px solid var(--line-faint);
     position: relative;
@@ -858,7 +878,7 @@ body::after {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-top: 3rem;
+    margin-top: 2rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--line-faint);
     font-size: 0.72rem;
@@ -1017,7 +1037,7 @@ body::after {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 1.25rem;
-    padding-block: clamp(3rem, 6vw, 5rem);
+    padding-block: clamp(2rem, 4vw, 3.25rem);
     border-top: 1px solid var(--line-faint);
 }
 
@@ -1099,8 +1119,10 @@ body::after {
     align-items: flex-start;
     justify-content: center;
     padding: clamp(0rem, 4vw, 3.5rem) clamp(0rem, 4vw, 2rem);
+    padding-bottom: max(clamp(0rem, 4vw, 3.5rem), env(safe-area-inset-bottom));
     overflow-y: auto;
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .critic-modal[hidden] {
@@ -1258,7 +1280,7 @@ body::after {
 /* Body copy */
 .critic-text,
 .critic-conclusion {
-    margin-top: clamp(1.75rem, 3.5vw, 2.75rem);
+    margin-top: var(--space-block);
 }
 
 .post-body {
@@ -1600,6 +1622,31 @@ body::after {
         flex-direction: column;
         align-items: flex-start;
     }
+
+    .masthead-word {
+        font-size: clamp(2.5rem, 11vw, 3.4rem);
+    }
+
+    .section-intro h2 {
+        font-size: clamp(2rem, 9vw, 2.9rem);
+    }
+
+    .diary-copy .film-kicker {
+        font-size: 1.4rem;
+    }
+
+    /* The modal is edge-to-edge here, so its own radius and border would
+       draw a frame against the viewport edge. */
+    .critic-modal-dialog {
+        border-inline: 0;
+        border-radius: 0;
+        min-height: 100%;
+    }
+
+    .modal-close {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
 }
 
 /* ==========================================================================
@@ -1607,7 +1654,7 @@ body::after {
    ========================================================================== */
 
 .recent {
-    padding-block: clamp(3rem, 6vw, 5rem) var(--rhythm);
+    padding-block: clamp(2rem, 4vw, 3.25rem) var(--rhythm);
 }
 
 .recent .section-intro {
@@ -1650,6 +1697,30 @@ body::after {
 
     .recent-watch-poster {
         filter: saturate(0.82) brightness(0.9);
+    }
+
+    /* Rows and the language toggle are the primary controls on a phone. */
+    .diary-row {
+        padding-block: 1.25rem;
+    }
+
+    .language button {
+        min-height: 2.5rem;
+        padding-inline: 0.35rem;
+    }
+
+    .pagination button {
+        min-height: 2.75rem;
+        padding-inline: 0.25rem;
+    }
+
+    .share-button,
+    .spoiler-all-toggle {
+        min-height: 2.75rem;
+    }
+
+    .spoiler-toggle {
+        padding-block: 0.3em;
     }
 }
 
@@ -1788,7 +1859,7 @@ body::after {
 @media (max-width: 559px) {
     .diary-month {
         top: 3.9rem;
-        margin-top: 2.5rem;
+        margin-top: 1.5rem;
         letter-spacing: 0.2em;
     }
 }

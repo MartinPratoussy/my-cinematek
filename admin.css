@@ -1,0 +1,957 @@
+/* ==========================================================================
+   my-cinematek — admin studio
+
+   Loaded after styles.css, which provides the tokens, reset and fonts.
+   Only admin-specific surfaces live here.
+   ========================================================================== */
+
+/* admin.js toggles this class to swap the login panel for the editor. */
+.hidden {
+    display: none !important;
+}
+
+/* ==========================================================================
+   Shell
+   ========================================================================== */
+
+.admin-main {
+    padding-bottom: var(--rhythm);
+}
+
+/* The public sheet pads and rules every direct <section> of .journal; the
+   admin panels manage their own spacing instead. */
+.admin-main > section {
+    padding-block: 0;
+    border-top: 0;
+}
+
+.admin-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.admin-nav a {
+    color: var(--text-soft);
+    border-bottom: 1px solid transparent;
+    transition: color var(--speed) var(--ease), border-color var(--speed) var(--ease);
+}
+
+.admin-nav a:hover {
+    color: var(--accent-strong);
+    border-bottom-color: var(--accent);
+}
+
+/* ==========================================================================
+   Login
+   ========================================================================== */
+
+.admin-login {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    width: min(100%, 34rem);
+    margin: clamp(3rem, 12vh, 7rem) auto;
+    padding: clamp(1.75rem, 4vw, 2.75rem);
+    background: linear-gradient(170deg, #1b1215 0%, var(--surface) 55%, #140f11 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.admin-login h1 {
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+}
+
+.admin-login > p:not(.eyebrow) {
+    max-width: 38ch;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.admin-login form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+/* ==========================================================================
+   Studio heading + quick nav
+   ========================================================================== */
+
+.admin-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.admin-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-top: clamp(1.75rem, 4vw, 3rem);
+}
+
+.admin-heading h1 {
+    margin-top: 0.5rem;
+    font-size: clamp(2.4rem, 6.5vw, 4.2rem);
+}
+
+.editor-status {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.75rem 1rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--text-soft);
+    background: var(--surface-sunken);
+    border: 1px solid var(--line-faint);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--radius-sm);
+}
+
+.editor-status:empty {
+    display: none;
+}
+
+/* Sticky tab strip, offset to clear the topbar. */
+.admin-quick-nav {
+    position: sticky;
+    top: 4.35rem;
+    z-index: 20;
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    margin-inline: calc(var(--gutter) * -1);
+    padding: 0.7rem var(--gutter);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, #0d0b0d 90%, transparent);
+    backdrop-filter: blur(12px) saturate(130%);
+    box-shadow: inset 0 -1px 0 var(--line-faint);
+    scrollbar-width: none;
+}
+
+.admin-quick-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.admin-quick-nav a {
+    flex: none;
+    padding-bottom: 0.2rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid transparent;
+    white-space: nowrap;
+    transition: color var(--speed) var(--ease), border-color var(--speed) var(--ease);
+}
+
+.admin-quick-nav a:hover {
+    color: var(--accent-strong);
+    border-bottom-color: var(--accent);
+}
+
+/* ==========================================================================
+   Workspace
+   ========================================================================== */
+
+.admin-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(19rem, 0.9fr);
+    gap: 1.5rem;
+    align-items: start;
+    scroll-margin-top: 7.5rem;
+}
+
+.admin-side-stack {
+    display: grid;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.admin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+    padding: clamp(1.1rem, 2.5vw, 1.75rem);
+    background: var(--surface);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--line-faint);
+}
+
+/* Several heads list the eyebrow and title as direct siblings rather than
+   wrapping them, so space-between would push them to opposite ends. */
+.section-head:has(> .eyebrow) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.section-head h2 {
+    font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+}
+
+.section-head .eyebrow {
+    margin-bottom: 0.3rem;
+}
+
+.section-head:has(> .eyebrow) .eyebrow {
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Form primitives
+   ========================================================================== */
+
+.admin-main label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0;
+    font-size: 0.64rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+}
+
+.admin-main input,
+.admin-main textarea,
+.admin-main select {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    font: inherit;
+    font-size: 0.92rem;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text);
+    background: var(--surface-sunken);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--speed) var(--ease), background var(--speed) var(--ease);
+}
+
+.admin-main textarea {
+    min-height: 8rem;
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.7;
+    resize: vertical;
+}
+
+.admin-main input::placeholder,
+.admin-main textarea::placeholder {
+    color: var(--text-faint);
+}
+
+.admin-main input:focus,
+.admin-main textarea:focus,
+.admin-main select:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface-raised);
+}
+
+.admin-main input:focus-visible,
+.admin-main textarea:focus-visible,
+.admin-main select:focus-visible {
+    outline: 2px solid var(--accent-glow);
+    outline-offset: 1px;
+}
+
+.admin-main input[type="file"] {
+    padding: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.admin-main input[type="date"],
+.admin-main input[type="number"] {
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-main input[type="checkbox"] {
+    width: auto;
+    accent-color: var(--accent);
+}
+
+.field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: 1rem;
+}
+
+.search-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.6rem;
+}
+
+.search-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.checkbox-field {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.field-hint {
+    font-size: 0.72rem;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+}
+
+.field-hint:empty {
+    display: none;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.primary-btn,
+.secondary-btn,
+.danger-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    padding: 0.7rem 1.25rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border-radius: 999px;
+    transition: background var(--speed) var(--ease), border-color var(--speed) var(--ease),
+        color var(--speed) var(--ease), transform var(--speed) var(--ease-out);
+}
+
+.primary-btn {
+    color: var(--ink-900);
+    background: var(--accent);
+    border: 1px solid var(--accent-strong);
+}
+
+.primary-btn:hover {
+    background: var(--accent-strong);
+    transform: translateY(-2px);
+}
+
+.secondary-btn {
+    color: var(--text);
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+}
+
+.secondary-btn:hover:not(:disabled) {
+    background: var(--ink-500);
+    border-color: var(--line-strong);
+    transform: translateY(-2px);
+}
+
+.secondary-btn:disabled {
+    color: var(--text-faint);
+    opacity: 0.55;
+    cursor: default;
+}
+
+.danger-btn {
+    color: var(--accent-warm);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--accent-warm) 45%, transparent);
+}
+
+.danger-btn:hover {
+    color: var(--text);
+    background: color-mix(in srgb, var(--accent-warm) 22%, transparent);
+    border-color: var(--accent-warm);
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+}
+
+.preset-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.preset-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.preset-tag {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--line-faint);
+    border-radius: 999px;
+    transition: color var(--speed) var(--ease), background var(--speed) var(--ease),
+        border-color var(--speed) var(--ease);
+}
+
+.preset-tag:hover {
+    color: var(--accent-strong);
+    border-color: var(--line-strong);
+}
+
+.preset-tag.selected {
+    color: var(--ink-900);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ==========================================================================
+   Film + venue pickers
+   ========================================================================== */
+
+.film-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.9rem;
+    background: var(--surface-sunken);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius-sm);
+}
+
+.film-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: 0.5rem;
+}
+
+.film-results:empty {
+    display: none;
+}
+
+.film-result {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.5rem;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--speed) var(--ease), transform var(--speed) var(--ease-out);
+}
+
+.film-result:hover {
+    border-color: var(--line-strong);
+    transform: translateY(-2px);
+}
+
+.film-result img,
+.selected-film img {
+    flex: none;
+    width: 2.6rem;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-xs);
+    box-shadow: var(--shadow-sm);
+}
+
+.film-result span {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.film-result strong {
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--text);
+}
+
+.film-result small {
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+.selected-film {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.7rem;
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+}
+
+.selected-film img {
+    width: 3.25rem;
+}
+
+.selected-film > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.selected-film h3 {
+    font-size: 1.15rem;
+}
+
+.selected-film p:not(.eyebrow) {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.venue-fields {
+    display: grid;
+    grid-template-columns: minmax(9rem, 0.7fr) minmax(12rem, 1fr);
+    gap: 1rem;
+}
+
+.venue-results {
+    display: grid;
+    gap: 0.3rem;
+    margin-top: 0.35rem;
+}
+
+.venue-results:empty {
+    display: none;
+}
+
+.venue-result {
+    display: grid;
+    gap: 0.1rem;
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+    background: var(--surface-raised);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--speed) var(--ease);
+}
+
+.venue-result:hover {
+    border-color: var(--line-strong);
+}
+
+.venue-result strong {
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.venue-result small {
+    overflow: hidden;
+    font-size: 0.68rem;
+    color: var(--text-faint);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Photo drafts
+   ========================================================================== */
+
+.review-photo-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding-block: 1rem;
+    border-top: 1px solid var(--line-faint);
+    border-bottom: 1px solid var(--line-faint);
+}
+
+.review-photo-editor h3 {
+    font-size: 1.2rem;
+}
+
+.review-photo-drafts {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.review-photo-draft {
+    display: grid;
+    grid-template-columns: 4.75rem minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    min-width: 0;
+    padding: 0.6rem;
+    background: var(--surface-sunken);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius-sm);
+}
+
+.review-photo-draft img {
+    width: 4.75rem;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-xs);
+}
+
+.review-photo-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.5fr);
+    gap: 0.7rem;
+    align-items: end;
+    min-width: 0;
+}
+
+.review-photo-draft .danger-btn {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.64rem;
+}
+
+/* ==========================================================================
+   Lists — published reviews and logged watches
+   ========================================================================== */
+
+.admin-posts {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line-faint);
+    scroll-margin-top: 7.5rem;
+}
+
+.admin-review-library {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.admin-posts .section-head {
+    margin-bottom: 1rem;
+}
+
+.admin-posts .section-head:not(:has(> .eyebrow)) {
+    align-items: baseline;
+}
+
+.admin-post-count {
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.admin-search-field {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.pager-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.pager-controls span {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.pager-controls .secondary-btn {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.64rem;
+}
+
+.admin-post-list,
+#watched-admin-list {
+    display: grid;
+    gap: 0.45rem;
+}
+
+/* Echoes the public .diary-row: meta left, title centre, actions right. */
+.admin-post {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--line-faint);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--speed) var(--ease), background var(--speed) var(--ease);
+}
+
+.admin-post:hover {
+    background: var(--surface-raised);
+    border-color: var(--line);
+}
+
+.admin-post > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.admin-post .eyebrow {
+    font-size: 0.62rem;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-post .eyebrow i {
+    display: none;
+}
+
+.admin-post h3 {
+    font-size: 1.15rem;
+    color: var(--text);
+}
+
+.admin-post p:last-child {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+.admin-entry-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    justify-content: flex-end;
+}
+
+.admin-entry-actions .secondary-btn,
+.admin-entry-actions .danger-btn {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.64rem;
+}
+
+/* Scroll targets must clear the topbar and the sticky quick-nav. */
+#review-form,
+#watched-form,
+#admin-post-list,
+#watched-admin-list,
+.letterboxd-sync {
+    scroll-margin-top: 7.5rem;
+}
+
+/* ==========================================================================
+   Narrow screens
+   ========================================================================== */
+
+@media (max-width: 980px) {
+    .admin-workspace {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 719px) {
+    .admin-main {
+        padding-bottom: clamp(2rem, 8vw, 3rem);
+    }
+
+    /* The brand plus two uppercase links overflow a 360px bar; the quick-nav
+       already links to the form once the editor is unlocked. */
+    .admin-nav {
+        gap: 1rem;
+        font-size: 0.66rem;
+        letter-spacing: 0.1em;
+    }
+
+    .admin-login {
+        margin-block: clamp(1.5rem, 6vh, 3rem);
+        padding: 1.25rem;
+    }
+
+    .admin-editor {
+        gap: 1.25rem;
+    }
+
+    .admin-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 1rem;
+        padding-top: 1.5rem;
+    }
+
+    .admin-quick-nav {
+        top: 3.9rem;
+        gap: 1.1rem;
+        letter-spacing: 0.12em;
+    }
+
+    /* 16px minimum: anything smaller makes iOS Safari zoom on focus. */
+    .admin-main input,
+    .admin-main textarea,
+    .admin-main select {
+        font-size: 1rem;
+    }
+
+    .admin-main input[type="file"] {
+        font-size: 0.85rem;
+    }
+
+    .venue-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .review-photo-draft {
+        grid-template-columns: 3.5rem minmax(0, 1fr);
+    }
+
+    .review-photo-draft img {
+        width: 3.5rem;
+    }
+
+    .review-photo-fields,
+    .review-photo-draft .danger-btn {
+        grid-column: 2;
+    }
+
+    .review-photo-fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .review-photo-draft .danger-btn {
+        justify-self: start;
+    }
+
+    .admin-post {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-entry-actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .admin-posts .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-toolbar {
+        gap: 0.9rem;
+    }
+
+    .pager-controls {
+        justify-content: space-between;
+        width: 100%;
+    }
+}
+
+@media (max-width: 559px) {
+    .admin-nav a[href="#review-form"] {
+        display: none;
+    }
+
+    .form-actions .primary-btn,
+    .form-actions .secondary-btn,
+    .admin-form > .secondary-btn {
+        flex: 1 1 100%;
+    }
+
+    /* Keep the field and its button legible rather than squeezing both. */
+    .search-row {
+        flex-wrap: wrap;
+    }
+
+    .search-row input {
+        flex-basis: 100%;
+    }
+
+    .search-row .primary-btn,
+    .search-row .secondary-btn {
+        flex: 1 1 auto;
+    }
+
+    .admin-entry-actions .secondary-btn,
+    .admin-entry-actions .danger-btn {
+        flex: 1 1 auto;
+    }
+}
+
+/* ==========================================================================
+   Touch targets
+
+   Pointer-coarse devices need ~44px of hit area, which the compact desktop
+   paddings do not provide.
+   ========================================================================== */
+
+@media (hover: none) {
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+        min-height: 2.75rem;
+    }
+
+    .pager-controls .secondary-btn,
+    .admin-entry-actions .secondary-btn,
+    .admin-entry-actions .danger-btn,
+    .review-photo-draft .danger-btn {
+        min-height: 2.5rem;
+        padding-inline: 1rem;
+    }
+
+    .preset-tag {
+        min-height: 2.25rem;
+        padding-inline: 0.9rem;
+    }
+
+    .admin-quick-nav a {
+        padding-block: 0.35rem 0.5rem;
+    }
+
+    .film-result,
+    .venue-result {
+        min-height: 3rem;
+    }
+
+    .checkbox-field input[type="checkbox"] {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+}
