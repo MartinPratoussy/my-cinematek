@@ -23,7 +23,26 @@
             dontBuild = true;
             installPhase = ''
               mkdir -p "$out/share/my-cinematek"
-              cp server.py index.html admin.html app.js admin.js public.js styles.css "$out/share/my-cinematek/"
+              cp server.py index.html admin.html admin.js public.js styles.css admin.css "$out/share/my-cinematek/"
+
+              # The list above is easy to forget when an asset is added, and a
+              # missing file only shows up as a 404 at runtime. Fail the build
+              # instead, by checking every local asset the pages reference.
+              cd "$out/share/my-cinematek"
+              missing=""
+              for page in index.html admin.html; do
+                for asset in $(grep -oE '(href|src)="[^"?]+' "$page" \
+                  | sed -E 's/.*="//' \
+                  | grep -E '\.(css|js)$'); do
+                  if [ ! -f "$asset" ]; then
+                    missing="$missing $page -> $asset"
+                  fi
+                done
+              done
+              if [ -n "$missing" ]; then
+                echo "error: assets referenced but not installed:$missing" >&2
+                exit 1
+              fi
             '';
           };
         in
